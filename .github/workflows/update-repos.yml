@@ -101,7 +101,7 @@ jobs:
             
             <h2>APT Repository (Debian/Ubuntu)</h2>
             <p>Add this repository to your system:</p>
-            <pre><code>echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/apt stable main" | sudo tee /etc/apt/sources.list.d/helium.list
+            <pre><code>echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/helium-browser-deb/apt stable main" | sudo tee /etc/apt/sources.list.d/helium.list
           sudo apt-get update
           sudo apt-get install helium-browser</code></pre>
             
@@ -110,7 +110,7 @@ jobs:
             <pre><code>sudo tee /etc/yum.repos.d/helium.repo &lt;&lt; 'REPOEOF'
           [helium]
           name=Helium Browser Repository
-          baseurl=https://arvaidasre.github.io/rpm/$basearch
+          baseurl=https://arvaidasre.github.io/helium-browser-deb/rpm/$basearch
           enabled=1
           gpgcheck=0
           REPOEOF

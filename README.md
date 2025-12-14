@@ -11,7 +11,7 @@ This repository provides an easy way to install **Helium Browser** on Linux syst
 Add the repository and install:
 
 ```bash
-echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/apt stable main" | sudo tee /etc/apt/sources.list.d/helium.list
+echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/helium-browser-deb/apt stable main" | sudo tee /etc/apt/sources.list.d/helium.list
 sudo apt-get update
 sudo apt-get install helium-browser
 ```
@@ -24,7 +24,7 @@ Create a repository file:
 sudo tee /etc/yum.repos.d/helium.repo <<EOF
 [helium]
 name=Helium Browser Repository
-baseurl=https://arvaidasre.github.io/rpm/\$basearch
+baseurl=https://arvaidasre.github.io/helium-browser-deb/rpm/\$basearch
 enabled=1
 gpgcheck=0
 EOF
@@ -76,7 +76,7 @@ If you want to build the package yourself:
 
 *   **GitHub Actions** checks for new upstream releases daily.
 *   **FPM** is used to package the upstream tarball into proper Debian and RPM packages.
-*   **APT and RPM repositories** are automatically generated and published to [arvaidasre.github.io](https://arvaidasre.github.io) via GitHub Pages.
+*   **APT and RPM repositories** are automatically generated and published to [arvaidasre.github.io/helium-browser-deb](https://arvaidasre.github.io/helium-browser-deb) via GitHub Pages.
 
 ## 🔗 Upstream Project
 

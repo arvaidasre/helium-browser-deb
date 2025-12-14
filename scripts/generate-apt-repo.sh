@@ -3,7 +3,7 @@ set -euo pipefail
 
 # --- Configuration ---
 REPO_NAME="helium-browser"
-REPO_URL="https://arvaidasre.github.io"
+REPO_URL="https://arvaidasre.github.io/helium-browser-deb"
 REPO_DIR="${1:-repo/apt}"
 
 # --- Helper Functions ---
