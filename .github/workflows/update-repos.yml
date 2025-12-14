@@ -65,12 +65,9 @@ jobs:
 
       - name: Generate RPM repository
         run: |
-          if [ -d "dist" ] && [ -n "$(ls -A dist/*.rpm 2>/dev/null)" ]; then
-            ./scripts/generate-rpm-repo.sh repo/rpm
-          else
-            echo "No .rpm files found, creating empty RPM repository structure"
-            mkdir -p repo/rpm/x86_64 repo/rpm/aarch64
-          fi
+          chmod +x scripts/*.sh
+          # Always generate repository structure
+          ./scripts/generate-rpm-repo.sh repo/rpm
 
       - name: Create index page
         run: |

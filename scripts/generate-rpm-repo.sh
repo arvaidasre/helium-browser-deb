@@ -50,7 +50,7 @@ fi
 # Generate repository metadata
 cd "$REPO_DIR"
 
-# For x86_64
+# For x86_64 - always generate metadata, even if empty
 if [[ -n "$(ls -A x86_64/*.rpm 2>/dev/null)" ]]; then
   log "Generating repository metadata for x86_64..."
   if command -v createrepo_c >/dev/null 2>&1; then
@@ -59,10 +59,18 @@ if [[ -n "$(ls -A x86_64/*.rpm 2>/dev/null)" ]]; then
     createrepo --update x86_64 || createrepo x86_64
   fi
 else
-  log "No x86_64 packages found, skipping metadata generation"
+  log "No x86_64 packages found, creating empty repository metadata"
+  # Create minimal repodata structure
+  mkdir -p x86_64/repodata
+  cat > x86_64/repodata/repomd.xml << 'REPOMD_EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<repomd xmlns="http://linux.duke.edu/metadata/repo" xmlns:rpm="http://linux.duke.edu/metadata/rpm">
+  <revision>0</revision>
+</repomd>
+REPOMD_EOF
 fi
 
-# For aarch64
+# For aarch64 - always generate metadata, even if empty
 if [[ -n "$(ls -A aarch64/*.rpm 2>/dev/null)" ]]; then
   log "Generating repository metadata for aarch64..."
   if command -v createrepo_c >/dev/null 2>&1; then
@@ -71,7 +79,15 @@ if [[ -n "$(ls -A aarch64/*.rpm 2>/dev/null)" ]]; then
     createrepo --update aarch64 || createrepo aarch64
   fi
 else
-  log "No aarch64 packages found, skipping metadata generation"
+  log "No aarch64 packages found, creating empty repository metadata"
+  # Create minimal repodata structure
+  mkdir -p aarch64/repodata
+  cat > aarch64/repodata/repomd.xml << 'REPOMD_EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<repomd xmlns="http://linux.duke.edu/metadata/repo" xmlns:rpm="http://linux.duke.edu/metadata/rpm">
+  <revision>0</revision>
+</repomd>
+REPOMD_EOF
 fi
 
 log "RPM repository generated successfully!"
