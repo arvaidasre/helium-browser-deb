@@ -81,7 +81,7 @@ jobs:
       - name: Create index page
         run: |
           mkdir -p repo
-          cat > repo/index.html <<'EOF'
+          cat > repo/index.html << 'HTML_EOF'
           <!DOCTYPE html>
           <html>
           <head>
@@ -102,26 +102,26 @@ jobs:
             <h2>APT Repository (Debian/Ubuntu)</h2>
             <p>Add this repository to your system:</p>
             <pre><code>echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/apt stable main" | sudo tee /etc/apt/sources.list.d/helium.list
-sudo apt-get update
-sudo apt-get install helium-browser</code></pre>
+          sudo apt-get update
+          sudo apt-get install helium-browser</code></pre>
             
             <h2>RPM Repository (Fedora/RHEL/openSUSE)</h2>
             <p>Create a repository file:</p>
-            <pre><code>sudo tee /etc/yum.repos.d/helium.repo &lt;&lt;EOF
-[helium]
-name=Helium Browser Repository
-baseurl=https://arvaidasre.github.io/rpm/\$basearch
-enabled=1
-gpgcheck=0
-EOF
-
-sudo dnf install helium-browser</code></pre>
+            <pre><code>sudo tee /etc/yum.repos.d/helium.repo &lt;&lt; 'REPOEOF'
+          [helium]
+          name=Helium Browser Repository
+          baseurl=https://arvaidasre.github.io/rpm/$basearch
+          enabled=1
+          gpgcheck=0
+          REPOEOF
+          
+          sudo dnf install helium-browser</code></pre>
             
             <h2>Direct Downloads</h2>
             <p>You can also download packages directly from the <a href="https://github.com/${{ github.repository }}/releases">GitHub Releases</a> page.</p>
           </body>
           </html>
-          EOF
+          HTML_EOF
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
