@@ -84,17 +84,24 @@ Date: $(date -u +"%a, %d %b %Y %H:%M:%S %Z")
 EOF
 
 # Add checksums (always add, even if files are empty)
+# Use relative paths from Release file location
 {
   echo "MD5Sum:"
   for f in dists/stable/main/binary-*/Packages* dists/stable/main/Sources*; do
     if [[ -f "$f" ]]; then
-      md5sum "$f" | awk '{printf " %s %8s %s\n", $1, $2, $3}'
+      SIZE=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo "0")
+      HASH=$(md5sum "$f" | cut -d' ' -f1)
+      REL_PATH="${f#dists/stable/}"
+      printf " %s %8s %s\n" "$HASH" "$SIZE" "$REL_PATH"
     fi
   done
   echo "SHA256:"
   for f in dists/stable/main/binary-*/Packages* dists/stable/main/Sources*; do
     if [[ -f "$f" ]]; then
-      sha256sum "$f" | awk '{printf " %s %8s %s\n", $1, $2, $3}'
+      SIZE=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo "0")
+      HASH=$(sha256sum "$f" | cut -d' ' -f1)
+      REL_PATH="${f#dists/stable/}"
+      printf " %s %8s %s\n" "$HASH" "$SIZE" "$REL_PATH"
     fi
   done
 } >> "dists/stable/Release"
