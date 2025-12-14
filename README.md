@@ -1,17 +1,26 @@
-# Helium Browser (Unofficial .deb)
+# Helium Browser (Unofficial .deb & .rpm)
 
-This repository provides an easy way to install **Helium Browser** on Debian/Ubuntu-based systems. It automatically tracks the [official upstream releases](https://github.com/imputnet/helium-linux) and builds a `.deb` package.
+This repository provides an easy way to install **Helium Browser** on Linux systems. It automatically tracks the [official upstream releases](https://github.com/imputnet/helium-linux) and builds both `.deb` (Debian/Ubuntu) and `.rpm` (Fedora/RHEL/openSUSE) packages.
 
 ## 🚀 Install
 
-You can download the latest `.deb` file from the [Releases page](../../releases).
+You can download the latest packages from the [Releases page](../../releases).
 
+### Debian / Ubuntu
 1.  Download the `helium-browser_...deb` file.
 2.  Install it using `apt`:
-
     ```bash
     sudo apt-get update
     sudo apt-get install ./helium-browser_*.deb
+    ```
+
+### Fedora / RHEL / openSUSE
+1.  Download the `helium-browser-...rpm` file.
+2.  Install it using `dnf` or `zypper`:
+    ```bash
+    sudo dnf install ./helium-browser-*.rpm
+    # or
+    sudo zypper install ./helium-browser-*.rpm
     ```
 
 ## 🛠️ Building Locally

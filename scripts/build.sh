@@ -72,12 +72,12 @@ fi
 # 3. Get Assets URLs
 ARCH="$(dpkg --print-architecture 2>/dev/null || uname -m)"
 case "$ARCH" in
-  x86_64|amd64) ASSET_PATTERN="x86_64"; DEB_ARCH="amd64" ;;
-  aarch64|arm64) ASSET_PATTERN="arm64"; DEB_ARCH="arm64" ;;
-  *) ASSET_PATTERN="$ARCH"; DEB_ARCH="$ARCH" ;;
+  x86_64|amd64) ASSET_PATTERN="x86_64"; DEB_ARCH="amd64"; RPM_ARCH="x86_64" ;;
+  aarch64|arm64) ASSET_PATTERN="arm64"; DEB_ARCH="arm64"; RPM_ARCH="aarch64" ;;
+  *) ASSET_PATTERN="$ARCH"; DEB_ARCH="$ARCH"; RPM_ARCH="$ARCH" ;;
 esac
 
-log "Target Architecture: $DEB_ARCH (Pattern: $ASSET_PATTERN)"
+log "Target Architecture: DEB=$DEB_ARCH, RPM=$RPM_ARCH (Pattern: $ASSET_PATTERN)"
 
 TARBALL_URL="$(jq -r --arg pat "$ASSET_PATTERN" '.assets[] | select(.name | test("_linux\\.tar\\.xz$")) | select(.name | test($pat)) | .browser_download_url' <<<"$JSON" | head -n 1)"
 
@@ -220,9 +220,38 @@ fpm -s dir -t deb \
 
 log "Built: $OUTDIR/$FULL_DEB_NAME"
 
+# Build with FPM (RPM)
+FULL_RPM_NAME="${PACKAGE_NAME}-${VERSION}-${RPM_ARCH}.rpm"
+fpm -s dir -t rpm \
+  -n "$PACKAGE_NAME" \
+  -v "$VERSION" \
+  --after-install "$(dirname "$0")/postinst.sh" \
+  -a "$RPM_ARCH" \
+  -m "Helium Packager <noreply@github.com>" \
+  --url "https://github.com/$UPSTREAM_REPO" \
+  --description "Helium Browser (Offline)" \
+  --vendor "Imputnet" \
+  --license "MIT" \
+  --depends "ca-certificates" \
+  --depends "gtk3" \
+  --depends "nss" \
+  --depends "libXScrnSaver" \
+  --depends "alsa-lib" \
+  --depends "mesa-libgbm" \
+  --depends "libdrm" \
+  --depends "xdg-utils" \
+  --provides "helium" \
+  --conflicts "helium" \
+  --replaces "helium" \
+  --package "$OUTDIR/$FULL_RPM_NAME" \
+  -C "$OFFLINE_ROOT" .
+
+log "Built: $OUTDIR/$FULL_RPM_NAME"
+
 # --- Finalize ---
 echo "FULL_DEB_FILENAME=$FULL_DEB_NAME" >> "$OUTDIR/meta.env"
+echo "FULL_RPM_FILENAME=$FULL_RPM_NAME" >> "$OUTDIR/meta.env"
 
 cd "$OUTDIR"
-sha256sum "$FULL_DEB_NAME" > SHA256SUMS
+sha256sum "$FULL_DEB_NAME" "$FULL_RPM_NAME" > SHA256SUMS
 log "Done."

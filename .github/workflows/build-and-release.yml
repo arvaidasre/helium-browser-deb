@@ -1,4 +1,4 @@
-name: Build DEB from upstream Tarball
+name: Build DEB and RPM from upstream Tarball
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ jobs:
       - name: Install deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq dpkg-dev curl apt-utils ruby ruby-dev build-essential
+          sudo apt-get install -y jq dpkg-dev curl apt-utils ruby ruby-dev build-essential rpm
           sudo gem install fpm
 
       - name: Build packages
@@ -43,4 +43,4 @@ jobs:
           gh release create "$UPSTREAM_TAG" \
             --title "$release_title" \
             --notes-file dist/release_notes.md \
-            dist/*.deb dist/SHA256SUMS
+            dist/*.deb dist/*.rpm dist/SHA256SUMS
