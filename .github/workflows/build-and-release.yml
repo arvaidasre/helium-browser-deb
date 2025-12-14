@@ -19,14 +19,7 @@ jobs:
       - name: Install deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq fakeroot dpkg-dev curl apt-utils
-
-      - name: Restore existing gh-pages (if any)
-        continue-on-error: true
-        uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-          path: gh-pages
+          sudo apt-get install -y jq dpkg-dev curl apt-utils
 
       - name: Build latest upstream (or skip)
         env:
@@ -36,16 +29,13 @@ jobs:
           ./scripts/build_latest_upstream_release.sh --outdir dist --package helium-browser
           cat dist/meta.env
 
-      - name: Build/Update APT repository (gh-pages content)
+      - name: Build APT repository
         if: ${{ hashFiles('dist/*.deb') != '' }}
         run: |
           set -euo pipefail
           chmod +x scripts/*.sh
           rm -rf apt-repo
           mkdir -p apt-repo
-          if [[ -d gh-pages ]]; then
-            (cd gh-pages && tar --exclude=.git -cf - .) | (cd apt-repo && tar -xf -)
-          fi
           deb_path="$(ls -1 dist/*.deb | head -n 1)"
           ./scripts/update_apt_repo.sh --repo-dir apt-repo --deb "$deb_path" --suite stable --component main
 
@@ -70,3 +60,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
           publish_dir: ./apt-repo
+          force_orphan: true

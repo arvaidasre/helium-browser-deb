@@ -1,13 +1,14 @@
 # Helium Browser (DEB)
 
-This repository automatically builds a **Helium** `.deb` package from the official upstream **AppImage** and publishes it to GitHub Releases.
+This repository automatically builds a **Helium** `.deb` package and publishes it to GitHub Releases.
 
 Upstream project: https://github.com/imputnet/helium-linux
 
 ## How it works
 
 - GitHub Actions periodically checks the latest `imputnet/helium-linux` Release.
-- If this repo does not yet have a Release with the same tag, it downloads the appropriate `.AppImage` for the runner architecture, extracts it, and repacks it into a `.deb`.
+- If this repo does not yet have a Release with the same tag, it creates a small “online installer” `.deb`.
+  During install/upgrade, the package downloads the official upstream Linux tarball and installs it into `/opt/helium`.
 - It creates a Release with the same tag and uploads:
   - `helium-browser_<version>_<arch>.deb`
   - `SHA256SUMS`
@@ -25,7 +26,7 @@ sudo apt-get install -y ./helium-browser_<version>_<arch>.deb
 
 ### Option B: APT repository (for automatic updates)
 
-This repo can publish a simple (unsigned) APT repository via GitHub Pages. After you add it, you can upgrade with `apt`.
+This repo publishes a simple (unsigned) APT repository via GitHub Pages. After you add it, you can upgrade with `apt`.
 
 1) Enable GitHub Pages for this repo:
    - Settings → Pages
@@ -56,16 +57,6 @@ sudo apt-get update
 sudo apt-get install -y jq fakeroot dpkg-dev curl
 ```
 
-Build from a specific AppImage:
-
-```bash
-./scripts/build_deb_from_appimage.sh \
-  --appimage ./Helium-*.AppImage \
-  --version 1.0.0 \
-  --outdir ./dist \
-  --package helium-browser
-```
-
 Build from the latest upstream Release:
 
 ```bash
@@ -74,5 +65,6 @@ Build from the latest upstream Release:
 
 ## Notes
 
-- This is a repack: application payload is installed into `/opt/helium` and started via `/usr/bin/helium` wrapper.
+- The package installs application payload into `/opt/helium` and starts it via `/usr/bin/helium` wrapper.
+- This DEB is an online installer: it downloads the upstream build during install/upgrade.
 - DEB version is normalized (e.g. `v1.2.3` → `1.2.3`).

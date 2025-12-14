@@ -8,13 +8,13 @@ Usage:
 
 Behavior:
   - Finds the latest upstream GitHub Release
-  - Downloads the first *.AppImage asset
-  - Builds a .deb and SHA256SUMS into --outdir
+  - Builds a small .deb (online installer) and SHA256SUMS into --outdir
+    The .deb downloads the upstream tarball during install/upgrade.
   - If running in GitHub Actions and a Release with the same tag already exists in this repo, it will skip.
 
 Outputs:
   Writes --outdir/meta.env with:
-    UPSTREAM_TAG, UPSTREAM_VERSION, APPIMAGE_URL, SKIPPED, DEB_FILENAME
+    UPSTREAM_TAG, UPSTREAM_VERSION, TARBALL_URL, SKIPPED, DEB_FILENAME
 EOF
 }
 
@@ -59,17 +59,17 @@ case "$host_arch" in
   *) asset_arch_pat="$host_arch";;
 esac
 
-appimage_url="$(jq -r --arg pat "$asset_arch_pat" '.assets[]
-  | select(.name | test("\\.AppImage$"))
+tarball_url="$(jq -r --arg pat "$asset_arch_pat" '.assets[]
+  | select(.name | test("_linux\\.tar\\.xz$"))
   | select(.name | test($pat))
   | .browser_download_url' <<<"$json" | head -n 1)"
 
-# Fallback: any AppImage if arch-specific match is missing
-if [[ -z "$appimage_url" || "$appimage_url" == "null" ]]; then
-  appimage_url="$(jq -r '.assets[] | select(.name | test("\\.AppImage$")) | .browser_download_url' <<<"$json" | head -n 1)"
+# Fallback: any linux tarball if arch-specific match is missing
+if [[ -z "$tarball_url" || "$tarball_url" == "null" ]]; then
+  tarball_url="$(jq -r '.assets[] | select(.name | test("_linux\\.tar\\.xz$")) | .browser_download_url' <<<"$json" | head -n 1)"
 fi
-if [[ -z "$appimage_url" || "$appimage_url" == "null" ]]; then
-  echo "No AppImage asset found in upstream latest release ($tag)" >&2
+if [[ -z "$tarball_url" || "$tarball_url" == "null" ]]; then
+  echo "No linux tarball asset found in upstream latest release ($tag)" >&2
   exit 1
 fi
 
@@ -101,27 +101,20 @@ fi
 cat >"$outdir/meta.env" <<EOF
 UPSTREAM_TAG=${tag}
 UPSTREAM_VERSION=${version}
-APPIMAGE_URL=${appimage_url}
+TARBALL_URL=${tarball_url}
 SKIPPED=${skipped}
 DEB_FILENAME=${package_name}_${version}_ARCH.deb
 EOF
+
+scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ "$skipped" == "1" ]]; then
   echo "Release ${tag} already exists in ${this_repo}; skipping build."
   exit 0
 fi
 
-workdir="$(mktemp -d)"
-cleanup() { rm -rf "$workdir"; }
-trap cleanup EXIT
-
-appimage_path="$workdir/Helium-${tag}.AppImage"
-curl -fL "$appimage_url" -o "$appimage_path"
-
-scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-"$scripts_dir/build_deb_from_appimage.sh" \
-  --appimage "$appimage_path" \
+"$scripts_dir/build_online_deb.sh" \
+  --tarball-url "$tarball_url" \
   --version "$version" \
   --outdir "$outdir" \
   --package "$package_name"
