@@ -4,9 +4,41 @@ This repository provides an easy way to install **Helium Browser** on Linux syst
 
 ## 🚀 Install
 
-You can download the latest packages from the [Releases page](../../releases).
+### Option 1: Using APT/RPM Repository (Recommended)
 
-### Debian / Ubuntu
+#### Debian / Ubuntu
+
+Add the repository and install:
+
+```bash
+echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/apt stable main" | sudo tee /etc/apt/sources.list.d/helium.list
+sudo apt-get update
+sudo apt-get install helium-browser
+```
+
+#### Fedora / RHEL / openSUSE
+
+Create a repository file:
+
+```bash
+sudo tee /etc/yum.repos.d/helium.repo <<EOF
+[helium]
+name=Helium Browser Repository
+baseurl=https://arvaidasre.github.io/rpm/\$basearch
+enabled=1
+gpgcheck=0
+EOF
+
+sudo dnf install helium-browser
+# or for openSUSE:
+# sudo zypper install helium-browser
+```
+
+### Option 2: Direct Download
+
+You can also download the latest packages directly from the [Releases page](../../releases).
+
+#### Debian / Ubuntu
 1.  Download the `helium-browser_...deb` file.
 2.  Install it using `apt`:
     ```bash
@@ -14,7 +46,7 @@ You can download the latest packages from the [Releases page](../../releases).
     sudo apt-get install ./helium-browser_*.deb
     ```
 
-### Fedora / RHEL / openSUSE
+#### Fedora / RHEL / openSUSE
 1.  Download the `helium-browser-...rpm` file.
 2.  Install it using `dnf` or `zypper`:
     ```bash
@@ -43,7 +75,8 @@ If you want to build the package yourself:
 ## ℹ️ How it Works
 
 *   **GitHub Actions** checks for new upstream releases daily.
-*   **FPM** is used to package the upstream tarball into a proper Debian package.
+*   **FPM** is used to package the upstream tarball into proper Debian and RPM packages.
+*   **APT and RPM repositories** are automatically generated and published to [arvaidasre.github.io](https://arvaidasre.github.io) via GitHub Pages.
 
 ## 🔗 Upstream Project
 

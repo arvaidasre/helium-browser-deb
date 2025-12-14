@@ -1,0 +1,133 @@
+name: Update APT and RPM Repositories
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'dist/*.deb'
+      - 'dist/*.rpm'
+  workflow_run:
+    workflows: ["Build DEB and RPM from upstream Tarball"]
+    types:
+      - completed
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  update-repos:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev createrepo-c
+
+      - name: Install GitHub CLI
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_run'
+        run: |
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt update
+          sudo apt install gh -y
+
+      - name: Download latest packages from releases
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_run'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p dist
+          # Download latest release packages
+          LATEST_RELEASE=$(gh api repos/${{ github.repository }}/releases/latest --jq '.tag_name')
+          if [ -n "$LATEST_RELEASE" ] && [ "$LATEST_RELEASE" != "null" ]; then
+            gh release download "$LATEST_RELEASE" --dir dist --pattern "*.deb" --pattern "*.rpm" || true
+          fi
+
+      - name: Generate APT repository
+        run: |
+          chmod +x scripts/*.sh
+          if [ -d "dist" ] && [ -n "$(ls -A dist/*.deb 2>/dev/null)" ]; then
+            ./scripts/generate-apt-repo.sh repo/apt
+          else
+            echo "No .deb files found, creating empty APT repository structure"
+            mkdir -p repo/apt/dists/stable/main/binary-amd64
+            mkdir -p repo/apt/dists/stable/main/binary-arm64
+            mkdir -p repo/apt/pool/main
+          fi
+
+      - name: Generate RPM repository
+        run: |
+          if [ -d "dist" ] && [ -n "$(ls -A dist/*.rpm 2>/dev/null)" ]; then
+            ./scripts/generate-rpm-repo.sh repo/rpm
+          else
+            echo "No .rpm files found, creating empty RPM repository structure"
+            mkdir -p repo/rpm/x86_64 repo/rpm/aarch64
+          fi
+
+      - name: Create index page
+        run: |
+          mkdir -p repo
+          cat > repo/index.html <<'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Helium Browser Repository</title>
+            <meta charset="utf-8">
+            <style>
+              body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+              h1 { color: #333; }
+              h2 { color: #666; margin-top: 30px; }
+              code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
+              pre { background: #f4f4f4; padding: 15px; border-radius: 5px; overflow-x: auto; }
+            </style>
+          </head>
+          <body>
+            <h1>Helium Browser Repository</h1>
+            <p>This repository provides APT and RPM packages for Helium Browser.</p>
+            
+            <h2>APT Repository (Debian/Ubuntu)</h2>
+            <p>Add this repository to your system:</p>
+            <pre><code>echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/apt stable main" | sudo tee /etc/apt/sources.list.d/helium.list
+sudo apt-get update
+sudo apt-get install helium-browser</code></pre>
+            
+            <h2>RPM Repository (Fedora/RHEL/openSUSE)</h2>
+            <p>Create a repository file:</p>
+            <pre><code>sudo tee /etc/yum.repos.d/helium.repo &lt;&lt;EOF
+[helium]
+name=Helium Browser Repository
+baseurl=https://arvaidasre.github.io/rpm/\$basearch
+enabled=1
+gpgcheck=0
+EOF
+
+sudo dnf install helium-browser</code></pre>
+            
+            <h2>Direct Downloads</h2>
+            <p>You can also download packages directly from the <a href="https://github.com/${{ github.repository }}/releases">GitHub Releases</a> page.</p>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: repo
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
