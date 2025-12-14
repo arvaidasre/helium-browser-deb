@@ -114,6 +114,12 @@ set -euo pipefail
 
 custom_ntp_url="https://google.com/"
 
+# Point APPIMAGE at this launcher so Helium's upstream AppRun can bootstrap an
+# AppArmor profile (needed on Ubuntu 23.10+ when unprivileged user namespaces
+# are restricted by AppArmor).
+THIS="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+export APPIMAGE="${APPIMAGE:-$THIS}"
+
 has_custom_ntp=0
 for arg in "$@"; do
   case "$arg" in
@@ -127,6 +133,30 @@ done
 extra_args=()
 if [[ "$has_custom_ntp" -eq 0 ]]; then
   extra_args+=("--custom-ntp=${custom_ntp_url}")
+fi
+
+# If unprivileged user namespaces are restricted and AppArmor bootstrap cannot
+# run (e.g. missing apparmor_parser), Chromium will crash with "No usable sandbox".
+# As a last resort, fall back to --no-sandbox unless the user already set it.
+needs_no_sandbox=0
+if [[ -r /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]]; then
+  if [[ "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null || echo 0)" != "0" ]]; then
+    if ! command -v apparmor_parser >/dev/null 2>&1; then
+      needs_no_sandbox=1
+    fi
+  fi
+fi
+
+has_no_sandbox=0
+for arg in "$@"; do
+  if [[ "$arg" == "--no-sandbox" ]]; then
+    has_no_sandbox=1
+    break
+  fi
+done
+
+if [[ "$needs_no_sandbox" -eq 1 && "$has_no_sandbox" -eq 0 ]]; then
+  extra_args+=("--no-sandbox")
 fi
 
 exec /opt/helium/AppRun "${extra_args[@]}" "$@"

@@ -84,6 +84,75 @@ set -euo pipefail
 
 custom_ntp_url="https://google.com/"
 
+# AppArmor bootstrap for Ubuntu 23.10+ (unprivileged userns restrictions)
+THIS="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+export APPIMAGE="${APPIMAGE:-$THIS}"
+
+AA_PROFILE_PATH=/etc/apparmor.d/helium-appimage
+AA_SYSFS_USERNS_PATH=/proc/sys/kernel/apparmor_restrict_unprivileged_userns
+
+has_command() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+sudo_shim() {
+  if [[ "$(id -u)" == "0" ]]; then
+    "$@"
+  elif has_command pkexec; then
+    exec pkexec "$@"
+  elif has_command sudo; then
+    exec sudo "$@"
+  elif has_command su; then
+    exec su -c "$*"
+  else
+    return 1
+  fi
+}
+
+print_apparmor_profile() {
+  local appimage_esc
+  appimage_esc=$(echo "$APPIMAGE" | sed 's/"/\\"/g' | tr -d '\n')
+
+  echo 'abi <abi/4.0>,'
+  echo 'include <tunables/global>'
+  echo
+  echo 'profile helium-appimage "'"$appimage_esc"'" flags=(default_allow) {'
+  echo '  userns,'
+  echo '  include if exists <local/helium-appimage>'
+  echo '}'
+}
+
+needs_apparmor_bootstrap() {
+  [[ "${APPARMOR_BOOTSTRAPPED:-0}" != "1" ]] \
+    && [[ -f "$AA_SYSFS_USERNS_PATH" ]] \
+    && [[ "$(cat "$AA_SYSFS_USERNS_PATH" 2>/dev/null || echo 0)" != "0" ]] \
+    && has_command aa-enabled \
+    && [[ "$(aa-enabled 2>/dev/null || true)" == "Yes" ]] \
+    && [[ -d /etc/apparmor.d ]] \
+    && {
+      [[ ! -f "$AA_PROFILE_PATH" ]] \
+        || [[ "$(print_apparmor_profile)" != "$(cat "$AA_PROFILE_PATH")" ]]
+    }
+}
+
+has_apparmor_prereqs() {
+  if ! has_command apparmor_parser; then
+    echo "WARN: Skipping AppArmor bootstrap due to missing apparmor_parser" >&2
+    return 1
+  fi
+}
+
+if needs_apparmor_bootstrap && has_apparmor_prereqs; then
+  echo "Helium has detected that your system uses AppArmor." >&2
+  echo "Before Helium can run, it needs to create an AppArmor profile for itself." >&2
+  echo "It will request to run commands as root. If you do not wish to do this, please exit." >&2
+
+  print_apparmor_profile | sudo_shim tee "$AA_PROFILE_PATH" >/dev/null \
+    && sudo_shim chmod 644 "$AA_PROFILE_PATH" \
+    && sudo_shim apparmor_parser -r "$AA_PROFILE_PATH" \
+    && APPARMOR_BOOTSTRAPPED=1 exec "$APPIMAGE" "$@"
+fi
+
 has_custom_ntp=0
 for arg in "$@"; do
   case "$arg" in
@@ -97,6 +166,29 @@ done
 extra_args=()
 if [[ "$has_custom_ntp" -eq 0 ]]; then
   extra_args+=("--custom-ntp=${custom_ntp_url}")
+fi
+
+# Last-resort crash avoidance: if userns is restricted and we couldn't
+# bootstrap AppArmor, Chromium will fail with "No usable sandbox".
+needs_no_sandbox=0
+if [[ -r "$AA_SYSFS_USERNS_PATH" ]]; then
+  if [[ "$(cat "$AA_SYSFS_USERNS_PATH" 2>/dev/null || echo 0)" != "0" ]]; then
+    if ! has_command apparmor_parser; then
+      needs_no_sandbox=1
+    fi
+  fi
+fi
+
+has_no_sandbox=0
+for arg in "$@"; do
+  if [[ "$arg" == "--no-sandbox" ]]; then
+    has_no_sandbox=1
+    break
+  fi
+done
+
+if [[ "$needs_no_sandbox" -eq 1 && "$has_no_sandbox" -eq 0 ]]; then
+  extra_args+=("--no-sandbox")
 fi
 
 exec /opt/helium/chrome "${extra_args[@]}" "$@"
