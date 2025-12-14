@@ -1,4 +1,4 @@
-name: Build DEB from upstream AppImage
+name: Build DEB from upstream Tarball
 
 on:
   workflow_dispatch:

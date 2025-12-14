@@ -34,7 +34,7 @@ If you want to build the package yourself:
 ## ℹ️ How it Works
 
 *   **GitHub Actions** checks for new upstream releases daily.
-*   **FPM** is used to package the AppImage into a proper Debian package.
+*   **FPM** is used to package the upstream tarball into a proper Debian package.
 
 ## 🔗 Upstream Project
 
