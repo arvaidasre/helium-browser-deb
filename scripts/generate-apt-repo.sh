@@ -83,14 +83,20 @@ Description: Helium Browser Repository
 Date: $(date -u +"%a, %d %b %Y %H:%M:%S %Z")
 EOF
 
-# Add checksums
+# Add checksums (always add, even if files are empty)
 {
   echo "MD5Sum:"
-  find dists/stable/main -type f \( -name "Packages*" -o -name "Sources*" -o -name "Release" \) -exec md5sum {} \; | \
-    awk '{printf " %s %8s %s\n", $1, $2, $3}'
+  for f in dists/stable/main/binary-*/Packages* dists/stable/main/Sources*; do
+    if [[ -f "$f" ]]; then
+      md5sum "$f" | awk '{printf " %s %8s %s\n", $1, $2, $3}'
+    fi
+  done
   echo "SHA256:"
-  find dists/stable/main -type f \( -name "Packages*" -o -name "Sources*" -o -name "Release" \) -exec sha256sum {} \; | \
-    awk '{printf " %s %8s %s\n", $1, $2, $3}'
+  for f in dists/stable/main/binary-*/Packages* dists/stable/main/Sources*; do
+    if [[ -f "$f" ]]; then
+      sha256sum "$f" | awk '{printf " %s %8s %s\n", $1, $2, $3}'
+    fi
+  done
 } >> "dists/stable/Release"
 
 log "APT repository generated successfully!"

@@ -60,14 +60,8 @@ jobs:
       - name: Generate APT repository
         run: |
           chmod +x scripts/*.sh
-          if [ -d "dist" ] && [ -n "$(ls -A dist/*.deb 2>/dev/null)" ]; then
-            ./scripts/generate-apt-repo.sh repo/apt
-          else
-            echo "No .deb files found, creating empty APT repository structure"
-            mkdir -p repo/apt/dists/stable/main/binary-amd64
-            mkdir -p repo/apt/dists/stable/main/binary-arm64
-            mkdir -p repo/apt/pool/main
-          fi
+          # Always generate repository structure
+          ./scripts/generate-apt-repo.sh repo/apt
 
       - name: Generate RPM repository
         run: |
