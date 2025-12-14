@@ -19,14 +19,15 @@ jobs:
       - name: Install deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq dpkg-dev curl apt-utils
+          sudo apt-get install -y jq dpkg-dev curl apt-utils ruby ruby-dev build-essential
+          sudo gem install fpm
 
-      - name: Build latest upstream (or skip)
+      - name: Build packages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           chmod +x scripts/*.sh
-          ./scripts/build_latest_upstream_release.sh --outdir dist --package helium-browser
+          ./scripts/build.sh
           cat dist/meta.env
 
       - name: Build APT repository
@@ -38,7 +39,19 @@ jobs:
           mkdir -p apt-repo
           source dist/meta.env
           deb_path="dist/${ONLINE_DEB_FILENAME}"
-          ./scripts/update_apt_repo.sh --repo-dir apt-repo --deb "$deb_path" --suite stable --component main
+          
+          # Construct Pages URL
+          REPO_OWNER="${{ github.repository_owner }}"
+          REPO_NAME="${{ github.event.repository.name }}"
+          # Handle case where owner/repo case might differ, but usually lowercase for pages
+          URL_BASE="https://${REPO_OWNER}.github.io/${REPO_NAME}"
+          
+          ./scripts/update_apt_repo.sh \
+            --repo-dir apt-repo \
+            --deb "$deb_path" \
+            --suite stable \
+            --component main \
+            --url-base "$URL_BASE"
 
       - name: Create GitHub Release
         if: ${{ hashFiles('dist/*.deb') != '' }}

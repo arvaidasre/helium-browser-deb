@@ -1,73 +1,67 @@
-# Helium Browser (DEB)
+# Helium Browser (Unofficial .deb)
 
-This repository automatically builds a **Helium** `.deb` package and publishes it to GitHub Releases.
+This repository provides an easy way to install and update **Helium Browser** on Debian/Ubuntu-based systems. It automatically tracks the [official upstream releases](https://github.com/imputnet/helium-linux) and builds `.deb` packages.
 
-Upstream project: https://github.com/imputnet/helium-linux
+## 🚀 Quick Install
 
-## How it works
-
-- GitHub Actions periodically checks the latest `imputnet/helium-linux` Release.
-- If this repo does not yet have a Release with the same tag, it creates a small “online installer” `.deb`.
-  During install/upgrade, the package downloads the official upstream Linux tarball and installs it into `/opt/helium`.
-- It creates a Release with the same tag and uploads:
-  - `helium-browser_<version>_<arch>.deb`
-  - `SHA256SUMS`
-
-## Install
-
-### Option A: Download from GitHub Releases
-
-Download the `.deb` from this repo’s Releases page and install:
+The easiest way to install Helium Browser and enable automatic updates is to run the following command:
 
 ```bash
-sudo apt-get update
-sudo apt-get install -y ./helium-browser_<version>_<arch>.deb
+curl -sSL https://arvaidasre.github.io/helium-browser-deb/setup.sh | sudo bash
 ```
 
-### Option B: APT repository (for automatic updates)
+This script will:
+1.  Add the repository to your system.
+2.  Install Helium Browser.
 
-This repo publishes a simple (unsigned) APT repository via GitHub Pages. After you add it, you can upgrade with `apt`.
+## 📦 Other Installation Methods
 
-Note: GitHub Pages cannot host files larger than 100 MB. The full offline `.deb` is therefore published via GitHub Releases,
-while the APT repository provides a small installer package which downloads the official upstream Linux tarball during install/upgrade.
+### Manual APT Repository Setup
 
-1) Enable GitHub Pages for this repo:
-   - Settings → Pages
-   - Source: `Deploy from a branch`
-   - Branch: `gh-pages` (root)
+If you prefer to set it up manually:
 
-2) Add the APT source (replace `<OWNER>` and `<REPO>`):
+1.  Add the repository source:
+    ```bash
+    echo "deb [trusted=yes] https://arvaidasre.github.io/helium-browser-deb/ stable main" | sudo tee /etc/apt/sources.list.d/helium-browser.list
+    ```
 
-```bash
-echo "deb [trusted=yes] https://<OWNER>.github.io/<REPO>/ stable main" | sudo tee /etc/apt/sources.list.d/helium-browser.list
-sudo apt-get update
-sudo apt-get install -y helium-browser
-```
+2.  Update and install:
+    ```bash
+    sudo apt-get update
+    sudo apt-get install helium-browser
+    ```
 
-Upgrade later:
+### Download .deb Manually
 
-```bash
-sudo apt-get update
-sudo apt-get upgrade
-```
+You can also download the standalone `.deb` file from the [Releases page](../../releases).
 
-## Local build (Ubuntu/Debian)
+*   **Online Installer (`helium-browser-online_...deb`)**: Smaller file. Downloads the latest browser version during installation. Recommended for fast internet connections.
+*   **Offline Installer (`helium-browser_...deb`)**: Larger file. Contains the full browser. Good for offline installation.
 
-Requirements:
+## 🛠️ Building Locally
 
-```bash
-sudo apt-get update
-sudo apt-get install -y jq fakeroot dpkg-dev curl
-```
+If you want to build the package yourself:
 
-Build from the latest upstream Release:
+1.  **Install dependencies:**
+    ```bash
+    sudo apt-get update
+    sudo apt-get install -y curl jq ruby ruby-dev build-essential
+    sudo gem install fpm
+    ```
 
-```bash
-./scripts/build_latest_upstream_release.sh --outdir ./dist --package helium-browser
-```
+2.  **Run the build script:**
+    ```bash
+    ./scripts/build.sh
+    ```
+    The artifacts will be created in the `dist/` directory.
 
-## Notes
+## ℹ️ How it Works
 
-- The package installs application payload into `/opt/helium` and starts it via `/usr/bin/helium` wrapper.
-- This DEB is an online installer: it downloads the upstream build during install/upgrade.
-- DEB version is normalized (e.g. `v1.2.3` → `1.2.3`).
+*   **GitHub Actions** checks for new upstream releases daily.
+*   **FPM** is used to package the AppImage into a proper Debian package.
+*   **APT Repository** is hosted on GitHub Pages for easy updates via `apt upgrade`.
+
+## 🔗 Upstream Project
+
+This is an unofficial packaging project. The actual browser is developed here:
+https://github.com/imputnet/helium-linux

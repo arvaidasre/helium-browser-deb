@@ -20,6 +20,7 @@ repo_dir=""
 deb_path=""
 suite="stable"
 component="main"
+url_base=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -27,6 +28,7 @@ while [[ $# -gt 0 ]]; do
     --deb) deb_path="$2"; shift 2;;
     --suite) suite="$2"; shift 2;;
     --component) component="$2"; shift 2;;
+    --url-base) url_base="$2"; shift 2;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown arg: $1"; usage; exit 2;;
   esac
@@ -80,3 +82,31 @@ if command -v apt-ftparchive >/dev/null 2>&1; then
 fi
 
 echo "APT repo updated: $repo_dir (suite=$suite component=$component arch=$arch)"
+
+if [[ -n "$url_base" ]]; then
+  cat >"$repo_dir/setup.sh" <<EOF
+#!/bin/bash
+set -e
+
+REPO_URL="${url_base}"
+LIST_FILE="/etc/apt/sources.list.d/helium-browser.list"
+
+if [ "\$(id -u)" -ne 0 ]; then
+  echo "Please run as root"
+  exit 1
+fi
+
+echo "Adding Helium Browser repository..."
+echo "deb [trusted=yes] \$REPO_URL $suite $component" > "\$LIST_FILE"
+
+echo "Updating package lists..."
+apt-get update
+
+echo "Installing Helium Browser..."
+apt-get install -y helium-browser
+
+echo "Done! Helium Browser is installed."
+EOF
+  chmod +x "$repo_dir/setup.sh"
+  echo "Generated setup.sh at $repo_dir/setup.sh"
+fi
