@@ -1,0 +1,63 @@
+name: Update Website
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily at 4:30 AM UTC (30 min after repo update)
+    - cron: '30 4 * * *'
+  workflow_run:
+    workflows: ["Update APT and RPM Repositories"]
+    types:
+      - completed
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  update-website:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Create index page
+        run: |
+          mkdir -p repo
+          # Copy the modern index.html template
+          if [ -f "scripts/index.html.template" ]; then
+            cp scripts/index.html.template repo/index.html
+            echo "Using modern index.html template"
+          else
+            echo "Template not found, creating basic index.html"
+            cat > repo/index.html << 'HTML_EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Helium Browser Repository</title>
+            <meta charset="utf-8">
+          </head>
+          <body>
+            <h1>Helium Browser Repository</h1>
+            <p>Loading...</p>
+          </body>
+          </html>
+          HTML_EOF
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: repo
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+

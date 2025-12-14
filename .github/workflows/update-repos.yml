@@ -75,30 +75,6 @@ jobs:
           # Always generate repository structure
           ./scripts/generate-rpm-repo.sh repo/rpm
 
-      - name: Create index page
-        run: |
-          mkdir -p repo
-          # Copy the modern index.html template
-          if [ -f "scripts/index.html.template" ]; then
-            cp scripts/index.html.template repo/index.html
-            echo "Using modern index.html template"
-          else
-            echo "Template not found, creating basic index.html"
-            cat > repo/index.html << 'HTML_EOF'
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>Helium Browser Repository</title>
-            <meta charset="utf-8">
-          </head>
-          <body>
-            <h1>Helium Browser Repository</h1>
-            <p>Loading...</p>
-          </body>
-          </html>
-          HTML_EOF
-          fi
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -107,3 +83,14 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Trigger website update
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'update-website.yml',
+              ref: 'main'
+            })
