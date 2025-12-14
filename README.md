@@ -1,42 +1,18 @@
 # Helium Browser (Unofficial .deb)
 
-This repository provides an easy way to install and update **Helium Browser** on Debian/Ubuntu-based systems. It automatically tracks the [official upstream releases](https://github.com/imputnet/helium-linux) and builds `.deb` packages.
+This repository provides an easy way to install **Helium Browser** on Debian/Ubuntu-based systems. It automatically tracks the [official upstream releases](https://github.com/imputnet/helium-linux) and builds a `.deb` package.
 
-## 🚀 Quick Install
+## 🚀 Install
 
-The easiest way to install Helium Browser and enable automatic updates is to run the following command:
+You can download the latest `.deb` file from the [Releases page](../../releases).
 
-```bash
-curl -sSL https://arvaidasre.github.io/helium-browser-deb/setup.sh | sudo bash
-```
+1.  Download the `helium-browser_...deb` file.
+2.  Install it using `apt`:
 
-This script will:
-1.  Add the repository to your system.
-2.  Install Helium Browser.
-
-## 📦 Other Installation Methods
-
-### Manual APT Repository Setup
-
-If you prefer to set it up manually:
-
-1.  Add the repository source:
-    ```bash
-    echo "deb [trusted=yes] https://arvaidasre.github.io/helium-browser-deb/ stable main" | sudo tee /etc/apt/sources.list.d/helium-browser.list
-    ```
-
-2.  Update and install:
     ```bash
     sudo apt-get update
-    sudo apt-get install helium-browser
+    sudo apt-get install ./helium-browser_*.deb
     ```
-
-### Download .deb Manually
-
-You can also download the standalone `.deb` file from the [Releases page](../../releases).
-
-*   **Online Installer (`helium-browser-online_...deb`)**: Smaller file. Downloads the latest browser version during installation. Recommended for fast internet connections.
-*   **Offline Installer (`helium-browser_...deb`)**: Larger file. Contains the full browser. Good for offline installation.
 
 ## 🛠️ Building Locally
 
@@ -59,7 +35,6 @@ If you want to build the package yourself:
 
 *   **GitHub Actions** checks for new upstream releases daily.
 *   **FPM** is used to package the AppImage into a proper Debian package.
-*   **APT Repository** is hosted on GitHub Pages for easy updates via `apt upgrade`.
 
 ## 🔗 Upstream Project
 

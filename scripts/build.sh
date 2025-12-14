@@ -175,70 +175,8 @@ fpm -s dir -t deb \
 
 log "Built: $OUTDIR/$FULL_DEB_NAME"
 
-# --- Build Online DEB ---
-log "Building Online DEB..."
-ONLINE_ROOT="$WORKDIR/online_root"
-mkdir -p "$ONLINE_ROOT/usr/bin" "$ONLINE_ROOT/usr/share/applications"
-
-# Reuse Wrapper & Desktop from Offline build
-cp "$OFFLINE_ROOT/usr/bin/helium" "$ONLINE_ROOT/usr/bin/"
-cp "$OFFLINE_ROOT/usr/share/applications/helium.desktop" "$ONLINE_ROOT/usr/share/applications/"
-
-# Post-Install Script
-cat >"$WORKDIR/postinst" <<EOF
-#!/usr/bin/env bash
-set -e
-URL="${TARBALL_URL}"
-DEST="/opt/helium"
-echo "Downloading Helium from \$URL..."
-mkdir -p "\$DEST"
-tmp=\$(mktemp -d)
-curl -fsSL "\$URL" -o "\$tmp/helium.tar.xz"
-tar -xJf "\$tmp/helium.tar.xz" -C "\$tmp" --strip-components=1
-cp -a "\$tmp/." "\$DEST/"
-rm -rf "\$tmp"
-chmod +x "\$DEST/chrome"
-echo "Helium installed to \$DEST"
-EOF
-
-# Post-Remove Script
-cat >"$WORKDIR/postrm" <<EOF
-#!/usr/bin/env bash
-set -e
-if [ "\$1" = "purge" ]; then
-  rm -rf /opt/helium
-  rm -f /etc/apparmor.d/helium-appimage
-fi
-EOF
-
-ONLINE_DEB_NAME="${PACKAGE_NAME}-online_${VERSION}_${DEB_ARCH}.deb"
-fpm -s dir -t deb \
-  -n "$PACKAGE_NAME" \
-  -v "$VERSION" \
-  -a "$DEB_ARCH" \
-  -m "Helium Packager <noreply@github.com>" \
-  --url "https://github.com/$UPSTREAM_REPO" \
-  --description "Helium Browser (Online Installer)" \
-  --vendor "Imputnet" \
-  --license "MIT" \
-  --depends "ca-certificates" \
-  --depends "curl" \
-  --depends "xz-utils" \
-  --depends "tar" \
-  --deb-recommends "apparmor" \
-  --provides "helium" \
-  --conflicts "helium" \
-  --replaces "helium" \
-  --after-install "$WORKDIR/postinst" \
-  --after-remove "$WORKDIR/postrm" \
-  --package "$OUTDIR/$ONLINE_DEB_NAME" \
-  -C "$ONLINE_ROOT" .
-
-log "Built: $OUTDIR/$ONLINE_DEB_NAME"
-
 # --- Finalize ---
 echo "FULL_DEB_FILENAME=$FULL_DEB_NAME" >> "$OUTDIR/meta.env"
-echo "ONLINE_DEB_FILENAME=$ONLINE_DEB_NAME" >> "$OUTDIR/meta.env"
 
 cd "$OUTDIR"
 sha256sum "$FULL_DEB_NAME" > SHA256SUMS

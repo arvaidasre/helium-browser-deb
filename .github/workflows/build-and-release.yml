@@ -30,29 +30,6 @@ jobs:
           ./scripts/build.sh
           cat dist/meta.env
 
-      - name: Build APT repository
-        if: ${{ hashFiles('dist/*.deb') != '' }}
-        run: |
-          set -euo pipefail
-          chmod +x scripts/*.sh
-          rm -rf apt-repo
-          mkdir -p apt-repo
-          source dist/meta.env
-          deb_path="dist/${ONLINE_DEB_FILENAME}"
-          
-          # Construct Pages URL
-          REPO_OWNER="${{ github.repository_owner }}"
-          REPO_NAME="${{ github.event.repository.name }}"
-          # Handle case where owner/repo case might differ, but usually lowercase for pages
-          URL_BASE="https://${REPO_OWNER}.github.io/${REPO_NAME}"
-          
-          ./scripts/update_apt_repo.sh \
-            --repo-dir apt-repo \
-            --deb "$deb_path" \
-            --suite stable \
-            --component main \
-            --url-base "$URL_BASE"
-
       - name: Create GitHub Release
         if: ${{ hashFiles('dist/*.deb') != '' }}
         env:
@@ -66,13 +43,4 @@ jobs:
           gh release create "$UPSTREAM_TAG" \
             --title "$release_title" \
             --notes-file dist/release_notes.md \
-            "dist/${FULL_DEB_FILENAME}" dist/SHA256SUMS
-
-      - name: Publish APT repo to GitHub Pages (gh-pages)
-        if: ${{ hashFiles('apt-repo/**') != '' }}
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: ./apt-repo
-          force_orphan: true
+            dist/*.deb dist/SHA256SUMS
