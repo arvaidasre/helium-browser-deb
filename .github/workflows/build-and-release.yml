@@ -56,6 +56,7 @@ jobs:
         run: |
           set -euo pipefail
           source dist/meta.env
+          rm -f dist/meta.env
           # In case dist/meta.env says SKIPPED=1, there should be no .deb; this step won't run.
           gh release create "$UPSTREAM_TAG" \
             --title "$UPSTREAM_TAG" \
