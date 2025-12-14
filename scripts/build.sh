@@ -132,7 +132,7 @@ cat >"$OFFLINE_ROOT/usr/bin/helium" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 export APPIMAGE="/opt/helium/AppRun" # Fake AppImage path for some apps
-exec /opt/helium/AppRun "$@" --no-sandbox
+exec /opt/helium/AppRun "$@"
 EOF
 chmod +x "$OFFLINE_ROOT/usr/bin/helium"
 
@@ -154,6 +154,7 @@ FULL_DEB_NAME="${PACKAGE_NAME}_${VERSION}_${DEB_ARCH}.deb"
 fpm -s dir -t deb \
   -n "$PACKAGE_NAME" \
   -v "$VERSION" \
+  --after-install "$(dirname "$0")/postinst.sh" \
   -a "$DEB_ARCH" \
   -m "Helium Packager <noreply@github.com>" \
   --url "https://github.com/$UPSTREAM_REPO" \
