@@ -164,7 +164,7 @@ export LD_LIBRARY_PATH="/opt/helium\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
 # Example: EXTRA_FLAGS="--force-dark-mode --enable-features=VaapiVideoDecoder"
 EXTRA_FLAGS="--custom-ntp=https://www.google.com"
 
-exec /opt/helium/\$BIN_NAME \$EXTRA_FLAGS "\$@"
+exec /opt/helium/$BIN_NAME \$EXTRA_FLAGS "\$@"
 EOF
 chmod +x "$OFFLINE_ROOT/usr/bin/helium"
 
