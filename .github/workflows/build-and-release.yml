@@ -1,0 +1,71 @@
+name: Build DEB from upstream AppImage
+
+on:
+  workflow_dispatch:
+  schedule:
+    # daily
+    - cron: '23 3 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq fakeroot dpkg-dev curl apt-utils
+
+      - name: Restore existing gh-pages (if any)
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Build latest upstream (or skip)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          chmod +x scripts/*.sh
+          ./scripts/build_latest_upstream_release.sh --outdir dist --package helium-browser
+          cat dist/meta.env
+
+      - name: Build/Update APT repository (gh-pages content)
+        if: ${{ hashFiles('dist/*.deb') != '' }}
+        run: |
+          set -euo pipefail
+          chmod +x scripts/*.sh
+          rm -rf apt-repo
+          mkdir -p apt-repo
+          if [[ -d gh-pages ]]; then
+            (cd gh-pages && tar --exclude=.git -cf - .) | (cd apt-repo && tar -xf -)
+          fi
+          deb_path="$(ls -1 dist/*.deb | head -n 1)"
+          ./scripts/update_apt_repo.sh --repo-dir apt-repo --deb "$deb_path" --suite stable --component main
+
+      - name: Create GitHub Release
+        if: ${{ hashFiles('dist/*.deb') != '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          source dist/meta.env
+          # In case dist/meta.env says SKIPPED=1, there should be no .deb; this step won't run.
+          gh release create "$UPSTREAM_TAG" \
+            --title "$UPSTREAM_TAG" \
+            --notes "Automated DEB repack for Helium upstream AppImage." \
+            dist/*.deb dist/SHA256SUMS
+
+      - name: Publish APT repo to GitHub Pages (gh-pages)
+        if: ${{ hashFiles('apt-repo/**') != '' }}
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./apt-repo
