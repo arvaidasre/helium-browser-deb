@@ -1,10 +1,11 @@
 #!/bin/sh
 set -e
 
-# Fix chrome-sandbox permissions
-if [ -f "/opt/helium/chrome-sandbox" ]; then
-    chown root:root "/opt/helium/chrome-sandbox"
-    chmod 4755 "/opt/helium/chrome-sandbox"
+# Reload AppArmor profile
+if command -v apparmor_parser >/dev/null; then
+    if [ -f "/etc/apparmor.d/opt.helium.helium" ]; then
+        apparmor_parser -r -T -W /etc/apparmor.d/opt.helium.helium || true
+    fi
 fi
 
 # Update desktop database if available

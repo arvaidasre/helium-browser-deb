@@ -167,7 +167,19 @@ EXTRA_FLAGS="--custom-ntp=https://www.google.com"
 exec /opt/helium/$BIN_NAME \$EXTRA_FLAGS "\$@"
 EOF
 chmod +x "$OFFLINE_ROOT/usr/bin/helium"
+# AppArmor Profile (for Ubuntu 24.04+ user namespace restrictions)
+mkdir -p "$OFFLINE_ROOT/etc/apparmor.d"
+cat >"$OFFLINE_ROOT/etc/apparmor.d/opt.helium.helium" <<EOF
+abi <abi/4.0>,
+include <tunables/global>
 
+/opt/helium/$BIN_NAME flags=(unconfined) {
+  userns,
+
+  # Site-specific additions and overrides. See local/README for details.
+  include if exists <local/opt.helium.helium>
+}
+EOF
 # Desktop File
 cat >"$OFFLINE_ROOT/usr/share/applications/helium.desktop" <<EOF
 [Desktop Entry]
