@@ -47,11 +47,12 @@ jobs:
         run: |
           set -euo pipefail
           source dist/meta.env
+          release_title="$(cat dist/release_title.txt)"
           rm -f dist/meta.env
           # In case dist/meta.env says SKIPPED=1, there should be no .deb; this step won't run.
           gh release create "$UPSTREAM_TAG" \
-            --title "$UPSTREAM_TAG" \
-            --notes "Automated DEB repack for Helium upstream AppImage." \
+            --title "$release_title" \
+            --notes-file dist/release_notes.md \
             "dist/${FULL_DEB_FILENAME}" dist/SHA256SUMS
 
       - name: Publish APT repo to GitHub Pages (gh-pages)

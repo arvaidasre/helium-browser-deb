@@ -49,6 +49,35 @@ if [[ -z "$tag" || "$tag" == "null" ]]; then
   exit 1
 fi
 
+# Upstream release title/body (for mirroring release notes)
+upstream_title="$(jq -r '.name // ""' <<<"$json")"
+if [[ -z "$upstream_title" || "$upstream_title" == "null" ]]; then
+  upstream_title="$tag"
+fi
+upstream_body="$(jq -r '.body // ""' <<<"$json")"
+
+# Some repos rely on GitHub auto-generated release notes, which may not be stored
+# in the release body. If body is empty, attempt to generate notes via API.
+if [[ -z "$upstream_body" ]]; then
+  api_auth_header=()
+  if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    api_auth_header=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+  fi
+
+  prev_tag="$(curl -fsSL "https://api.github.com/repos/${upstream_repo}/releases?per_page=2" \
+    | jq -r '.[1].tag_name // ""')"
+
+  gen_payload="$(jq -n --arg tag "$tag" --arg prev "$prev_tag" 'if ($prev|length) > 0 then {tag_name:$tag, previous_tag_name:$prev} else {tag_name:$tag} end')"
+  upstream_body="$(curl -fsSL \
+    -X POST \
+    -H 'Content-Type: application/json' \
+    "${api_auth_header[@]}" \
+    -d "$gen_payload" \
+    "https://api.github.com/repos/${upstream_repo}/releases/generate-notes" \
+    | jq -r '.body // ""' \
+    || true)"
+fi
+
 host_arch="$(dpkg --print-architecture 2>/dev/null || true)"
 if [[ -z "$host_arch" ]]; then
   host_arch="amd64"
@@ -122,6 +151,10 @@ SKIPPED=${skipped}
 FULL_DEB_FILENAME=${package_name}_${version}_ARCH.deb
 ONLINE_DEB_FILENAME=${package_name}-online_${version}_ARCH.deb
 EOF
+
+# Write release title/notes files (used by workflow)
+printf '%s' "$upstream_title" > "$outdir/release_title.txt"
+printf '%s\n' "$upstream_body" > "$outdir/release_notes.md"
 
 scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
