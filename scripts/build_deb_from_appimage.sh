@@ -96,11 +96,40 @@ mkdir -p "$pkgroot/DEBIAN" "$pkgroot/opt/helium" "$pkgroot/usr/bin" "$pkgroot/us
 # Copy extracted payload
 cp -a "$extract_dir/squashfs-root"/* "$pkgroot/opt/helium/"
 
+# Seed first-run defaults (applies to new profiles)
+cat >"$pkgroot/opt/helium/master_preferences" <<'EOF'
+{
+  "browser": {
+    "enabled_labs_experiments": [
+      "custom-ntp@https://google.com/"
+    ]
+  }
+}
+EOF
+
 # Wrapper
 cat >"$pkgroot/usr/bin/helium" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-exec /opt/helium/AppRun "$@"
+
+custom_ntp_url="https://google.com/"
+
+has_custom_ntp=0
+for arg in "$@"; do
+  case "$arg" in
+    --custom-ntp|--custom-ntp=*)
+      has_custom_ntp=1
+      break
+      ;;
+  esac
+done
+
+extra_args=()
+if [[ "$has_custom_ntp" -eq 0 ]]; then
+  extra_args+=("--custom-ntp=${custom_ntp_url}")
+fi
+
+exec /opt/helium/AppRun "${extra_args[@]}" "$@"
 EOF
 chmod 0755 "$pkgroot/usr/bin/helium"
 

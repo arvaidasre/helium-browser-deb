@@ -81,7 +81,25 @@ mkdir -p "$pkgroot/DEBIAN" "$pkgroot/opt/helium" "$pkgroot/usr/bin" "$pkgroot/us
 cat >"$pkgroot/usr/bin/helium" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-exec /opt/helium/chrome "$@"
+
+custom_ntp_url="https://google.com/"
+
+has_custom_ntp=0
+for arg in "$@"; do
+  case "$arg" in
+    --custom-ntp|--custom-ntp=*)
+      has_custom_ntp=1
+      break
+      ;;
+  esac
+done
+
+extra_args=()
+if [[ "$has_custom_ntp" -eq 0 ]]; then
+  extra_args+=("--custom-ntp=${custom_ntp_url}")
+fi
+
+exec /opt/helium/chrome "${extra_args[@]}" "$@"
 EOF
 chmod 0755 "$pkgroot/usr/bin/helium"
 
@@ -136,6 +154,19 @@ mv "\${INSTALL_DIR}.new" "\${INSTALL_DIR}"
 rm -rf "\${INSTALL_DIR}.old" || true
 
 chmod +x "\${INSTALL_DIR}/chrome" || true
+
+# Seed first-run defaults for new profiles (do not overwrite if present)
+if [[ ! -f "\${INSTALL_DIR}/master_preferences" ]]; then
+  cat >"\${INSTALL_DIR}/master_preferences" <<'PREFS'
+{
+  "browser": {
+    "enabled_labs_experiments": [
+      "custom-ntp@https://google.com/"
+    ]
+  }
+}
+PREFS
+fi
 
 exit 0
 EOF
