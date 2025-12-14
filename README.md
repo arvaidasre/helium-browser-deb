@@ -28,6 +28,9 @@ sudo apt-get install -y ./helium-browser_<version>_<arch>.deb
 
 This repo publishes a simple (unsigned) APT repository via GitHub Pages. After you add it, you can upgrade with `apt`.
 
+Note: GitHub Pages cannot host files larger than 100 MB. The full offline `.deb` is therefore published via GitHub Releases,
+while the APT repository provides a small installer package which downloads the official upstream Linux tarball during install/upgrade.
+
 1) Enable GitHub Pages for this repo:
    - Settings → Pages
    - Source: `Deploy from a branch`

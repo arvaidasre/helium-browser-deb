@@ -8,13 +8,14 @@ Usage:
 
 Behavior:
   - Finds the latest upstream GitHub Release
-  - Builds a small .deb (online installer) and SHA256SUMS into --outdir
-    The .deb downloads the upstream tarball during install/upgrade.
+  - Builds a full offline .deb from upstream AppImage (for GitHub Releases)
+  - Builds a small online-installer .deb (for GitHub Pages APT repo)
   - If running in GitHub Actions and a Release with the same tag already exists in this repo, it will skip.
 
 Outputs:
   Writes --outdir/meta.env with:
-    UPSTREAM_TAG, UPSTREAM_VERSION, TARBALL_URL, SKIPPED, DEB_FILENAME
+    UPSTREAM_TAG, UPSTREAM_VERSION, APPIMAGE_URL, TARBALL_URL, SKIPPED,
+    FULL_DEB_FILENAME, ONLINE_DEB_FILENAME
 EOF
 }
 
@@ -73,6 +74,20 @@ if [[ -z "$tarball_url" || "$tarball_url" == "null" ]]; then
   exit 1
 fi
 
+appimage_url="$(jq -r --arg pat "$asset_arch_pat" '.assets[]
+  | select(.name | test("\\.AppImage$"))
+  | select(.name | test($pat))
+  | .browser_download_url' <<<"$json" | head -n 1)"
+
+# Fallback: any AppImage if arch-specific match is missing
+if [[ -z "$appimage_url" || "$appimage_url" == "null" ]]; then
+  appimage_url="$(jq -r '.assets[] | select(.name | test("\\.AppImage$")) | .browser_download_url' <<<"$json" | head -n 1)"
+fi
+if [[ -z "$appimage_url" || "$appimage_url" == "null" ]]; then
+  echo "No AppImage asset found in upstream latest release ($tag)" >&2
+  exit 1
+fi
+
 normalize_version() {
   local v="$1"
   v="${v#v}"
@@ -101,27 +116,60 @@ fi
 cat >"$outdir/meta.env" <<EOF
 UPSTREAM_TAG=${tag}
 UPSTREAM_VERSION=${version}
+APPIMAGE_URL=${appimage_url}
 TARBALL_URL=${tarball_url}
 SKIPPED=${skipped}
-DEB_FILENAME=${package_name}_${version}_ARCH.deb
+FULL_DEB_FILENAME=${package_name}_${version}_ARCH.deb
+ONLINE_DEB_FILENAME=${package_name}-online_${version}_ARCH.deb
 EOF
 
 scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Determine architecture once for filenames
+arch="$(dpkg --print-architecture 2>/dev/null || true)"
+if [[ -z "$arch" ]]; then arch="amd64"; fi
 
 if [[ "$skipped" == "1" ]]; then
   echo "Release ${tag} already exists in ${this_repo}; skipping build."
   exit 0
 fi
 
-"$scripts_dir/build_online_deb.sh" \
-  --tarball-url "$tarball_url" \
+workdir="$(mktemp -d)"
+cleanup() { rm -rf "$workdir"; }
+trap cleanup EXIT
+
+# Build full offline DEB
+appimage_path="$workdir/Helium-${tag}.AppImage"
+curl -fL "$appimage_url" -o "$appimage_path"
+
+"$scripts_dir/build_deb_from_appimage.sh" \
+  --appimage "$appimage_path" \
   --version "$version" \
   --outdir "$outdir" \
   --package "$package_name"
 
-# Update meta.env with real filename
-arch="$(dpkg --print-architecture 2>/dev/null || true)"
-if [[ -z "$arch" ]]; then arch="amd64"; fi
-sed -i "s/DEB_FILENAME=.*/DEB_FILENAME=${package_name}_${version}_${arch}.deb/" "$outdir/meta.env"
+full_deb_path="$(ls -1 "$outdir/${package_name}_${version}_"*.deb 2>/dev/null | head -n 1)"
+if [[ -z "$full_deb_path" ]]; then
+  echo "Failed to locate built full DEB in: $outdir" >&2
+  exit 1
+fi
+
+# Build small online-installer DEB (for APT repo)
+"$scripts_dir/build_online_deb.sh" \
+  --tarball-url "$tarball_url" \
+  --version "$version" \
+  --outdir "$outdir" \
+  --package "${package_name}" \
+  --deb-filename "${package_name}-online_${version}_${arch}.deb"
+
+# Update meta.env with real filenames
+sed -i "s/FULL_DEB_FILENAME=.*/FULL_DEB_FILENAME=${package_name}_${version}_${arch}.deb/" "$outdir/meta.env"
+sed -i "s/ONLINE_DEB_FILENAME=.*/ONLINE_DEB_FILENAME=${package_name}-online_${version}_${arch}.deb/" "$outdir/meta.env"
+
+# Build checksums for the full offline DEB (for Releases)
+(
+  cd "$outdir"
+  sha256sum "${package_name}_${version}_${arch}.deb" > SHA256SUMS
+)
 
 echo "Done. Tag: $tag"

@@ -36,7 +36,8 @@ jobs:
           chmod +x scripts/*.sh
           rm -rf apt-repo
           mkdir -p apt-repo
-          deb_path="$(ls -1 dist/*.deb | head -n 1)"
+          source dist/meta.env
+          deb_path="dist/${ONLINE_DEB_FILENAME}"
           ./scripts/update_apt_repo.sh --repo-dir apt-repo --deb "$deb_path" --suite stable --component main
 
       - name: Create GitHub Release
@@ -51,7 +52,7 @@ jobs:
           gh release create "$UPSTREAM_TAG" \
             --title "$UPSTREAM_TAG" \
             --notes "Automated DEB repack for Helium upstream AppImage." \
-            dist/*.deb dist/SHA256SUMS
+            "dist/${FULL_DEB_FILENAME}" dist/SHA256SUMS
 
       - name: Publish APT repo to GitHub Pages (gh-pages)
         if: ${{ hashFiles('apt-repo/**') != '' }}

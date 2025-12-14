@@ -16,6 +16,7 @@ version=""
 outdir=""
 package_name="helium-browser"
 arch=""
+deb_filename=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -24,6 +25,7 @@ while [[ $# -gt 0 ]]; do
     --outdir) outdir="$2"; shift 2;;
     --package) package_name="$2"; shift 2;;
     --arch) arch="$2"; shift 2;;
+    --deb-filename) deb_filename="$2"; shift 2;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown arg: $1"; usage; exit 2;;
   esac
@@ -60,6 +62,10 @@ infer_arch() {
 version="$(normalize_version "$version")"
 if [[ -z "$arch" ]]; then
   arch="$(infer_arch)"
+fi
+
+if [[ -z "$deb_filename" ]]; then
+  deb_filename="${package_name}_${version}_${arch}.deb"
 fi
 
 mkdir -p "$outdir"
@@ -169,7 +175,7 @@ Description: Helium Browser (online installer)
  and installs it into /opt/helium.
 EOF
 
-outdeb="$outdir/${package_name}_${version}_${arch}.deb"
+outdeb="$outdir/${deb_filename}"
 
 dpkg-deb --build "$pkgroot" "$outdeb" >/dev/null
 
