@@ -74,9 +74,10 @@ If you want to build the package yourself:
 
 ## ℹ️ How it Works
 
-*   **GitHub Actions** checks for new upstream releases daily.
+*   **GitHub Actions** checks for new upstream releases daily at 3:00 AM UTC.
 *   **FPM** is used to package the upstream tarball into proper Debian and RPM packages.
 *   **APT and RPM repositories** are automatically generated and published to [arvaidasre.github.io/helium-browser-deb](https://arvaidasre.github.io/helium-browser-deb) via GitHub Pages.
+*   **Repositories are automatically updated daily** at 4:00 AM UTC to ensure the latest packages are available.
 
 ## 🔗 Upstream Project
 

@@ -2,6 +2,9 @@ name: Update APT and RPM Repositories
 
 on:
   workflow_dispatch:
+  schedule:
+    # Daily at 4:00 AM UTC (1 hour after build workflow)
+    - cron: '0 4 * * *'
   push:
     branches:
       - main
@@ -21,7 +24,7 @@ permissions:
 jobs:
   update-repos:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event_name == 'schedule' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,7 +40,7 @@ jobs:
           sudo apt-get install -y dpkg-dev createrepo-c
 
       - name: Install GitHub CLI
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_run'
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_run' || github.event_name == 'schedule'
         run: |
           curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
           sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
@@ -46,7 +49,7 @@ jobs:
           sudo apt install gh -y
 
       - name: Download latest packages from releases
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_run'
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_run' || github.event_name == 'schedule'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -54,7 +57,10 @@ jobs:
           # Download latest release packages
           LATEST_RELEASE=$(gh api repos/${{ github.repository }}/releases/latest --jq '.tag_name')
           if [ -n "$LATEST_RELEASE" ] && [ "$LATEST_RELEASE" != "null" ]; then
+            echo "Downloading packages from release: $LATEST_RELEASE"
             gh release download "$LATEST_RELEASE" --dir dist --pattern "*.deb" --pattern "*.rpm" || true
+          else
+            echo "No releases found"
           fi
 
       - name: Generate APT repository
