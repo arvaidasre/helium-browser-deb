@@ -372,7 +372,7 @@
         }
 
         .meta-value a {
-            color: var(--primary);
+            color: #ffffff;            
             text-decoration: none;
             transition: color 0.3s ease;
         }
