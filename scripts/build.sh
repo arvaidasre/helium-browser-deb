@@ -79,21 +79,15 @@ esac
 
 log "Target Architecture: $DEB_ARCH (Pattern: $ASSET_PATTERN)"
 
-APPIMAGE_URL="$(jq -r --arg pat "$ASSET_PATTERN" '.assets[] | select(.name | test("\\.AppImage$")) | select(.name | test($pat)) | .browser_download_url' <<<"$JSON" | head -n 1)"
 TARBALL_URL="$(jq -r --arg pat "$ASSET_PATTERN" '.assets[] | select(.name | test("_linux\\.tar\\.xz$")) | select(.name | test($pat)) | .browser_download_url' <<<"$JSON" | head -n 1)"
 
 # Fallbacks
-if [[ -z "$APPIMAGE_URL" ]]; then
-  APPIMAGE_URL="$(jq -r '.assets[] | select(.name | test("\\.AppImage$")) | .browser_download_url' <<<"$JSON" | head -n 1)"
-fi
 if [[ -z "$TARBALL_URL" ]]; then
   TARBALL_URL="$(jq -r '.assets[] | select(.name | test("_linux\\.tar\\.xz$")) | .browser_download_url' <<<"$JSON" | head -n 1)"
 fi
 
-[[ -z "$APPIMAGE_URL" ]] && err "AppImage asset not found."
 [[ -z "$TARBALL_URL" ]] && err "Tarball asset not found."
 
-log "AppImage: $APPIMAGE_URL"
 log "Tarball: $TARBALL_URL"
 
 # Save Release Notes
@@ -112,27 +106,65 @@ log "Building Offline DEB..."
 OFFLINE_ROOT="$WORKDIR/offline_root"
 mkdir -p "$OFFLINE_ROOT/opt/helium" "$OFFLINE_ROOT/usr/bin" "$OFFLINE_ROOT/usr/share/applications" "$OFFLINE_ROOT/usr/share/icons/hicolor/512x512/apps"
 
-# Download and Extract AppImage
-log "Downloading AppImage..."
-curl -fsSL "$APPIMAGE_URL" -o "$WORKDIR/appimage"
-chmod +x "$WORKDIR/appimage"
-(cd "$WORKDIR" && ./appimage --appimage-extract >/dev/null)
+# Download and Extract Tarball
+log "Downloading Tarball..."
+curl -fsSL "$TARBALL_URL" -o "$WORKDIR/helium.tar.xz"
+tar -xf "$WORKDIR/helium.tar.xz" -C "$WORKDIR"
+
+# Locate extracted directory
+EXTRACTED_DIR="$(find "$WORKDIR" -maxdepth 1 -type d -name "helium*" | head -n 1)"
+[[ -z "$EXTRACTED_DIR" ]] && err "Could not find extracted directory."
 
 # Copy files
-cp -a "$WORKDIR/squashfs-root/"* "$OFFLINE_ROOT/opt/helium/"
-chmod -R u+w "$OFFLINE_ROOT/opt/helium" # Ensure writable for cleanup if needed
+cp -a "$EXTRACTED_DIR/"* "$OFFLINE_ROOT/opt/helium/"
+chmod -R u+w "$OFFLINE_ROOT/opt/helium"
+
+# Determine binary name
+if [[ -f "$OFFLINE_ROOT/opt/helium/helium" ]]; then
+  BIN_NAME="helium"
+elif [[ -f "$OFFLINE_ROOT/opt/helium/chrome" ]]; then
+  BIN_NAME="chrome"
+else
+  BIN_NAME="helium"
+  log "Warning: Could not detect binary name, defaulting to helium."
+fi
 
 # Icon
 if [[ -f "$OFFLINE_ROOT/opt/helium/helium.png" ]]; then
   cp "$OFFLINE_ROOT/opt/helium/helium.png" "$OFFLINE_ROOT/usr/share/icons/hicolor/512x512/apps/helium.png"
+elif [[ -f "$OFFLINE_ROOT/opt/helium/product_logo_256.png" ]]; then
+   cp "$OFFLINE_ROOT/opt/helium/product_logo_256.png" "$OFFLINE_ROOT/usr/share/icons/hicolor/512x512/apps/helium.png"
 fi
 
+# Initial Preferences (Homepage & Startup)
+cat >"$OFFLINE_ROOT/opt/helium/initial_preferences" <<EOF
+{
+  "homepage": "https://www.google.com",
+  "homepage_is_newtabpage": false,
+  "browser": {
+    "show_home_button": true
+  },
+  "session": {
+    "restore_on_startup": 4,
+    "startup_urls": [
+      "https://www.google.com"
+    ]
+  }
+}
+EOF
+chmod 644 "$OFFLINE_ROOT/opt/helium/initial_preferences"
+
 # Wrapper Script
-cat >"$OFFLINE_ROOT/usr/bin/helium" <<'EOF'
+cat >"$OFFLINE_ROOT/usr/bin/helium" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
-export APPIMAGE="/opt/helium/AppRun" # Fake AppImage path for some apps
-exec /opt/helium/AppRun "$@"
+export LD_LIBRARY_PATH="/opt/helium\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
+
+# Custom flags (add your chrome://flags overrides here)
+# Example: EXTRA_FLAGS="--force-dark-mode --enable-features=VaapiVideoDecoder"
+EXTRA_FLAGS="--custom-ntp=https://www.google.com"
+
+exec /opt/helium/\$BIN_NAME \$EXTRA_FLAGS "\$@"
 EOF
 chmod +x "$OFFLINE_ROOT/usr/bin/helium"
 
