@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helium Browser Repository</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-card .label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .filter-section {
+            padding: 30px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .package-section {
+            margin-bottom: 40px;
+        }
+
+        .package-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .package-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .package-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .package-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .package-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .package-version {
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .package-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .install-code {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin-top: 15px;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+
+        .copy-btn:hover {
+            background: #5568d3;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Helium Browser Repository</h1>
+            <p>Automated package repository for Linux distributions</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="label">Latest Version</div>
+                <div class="value" id="latest-version">Loading...</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Last Updated</div>
+                <div class="value" id="last-updated">Loading...</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Available Packages</div>
+                <div class="value" id="package-count">Loading...</div>
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-group">
+                <span class="filter-label">Filter by OS:</span>
+                <button class="filter-btn active" data-os="all">All</button>
+                <button class="filter-btn" data-os="ubuntu">Ubuntu</button>
+                <button class="filter-btn" data-os="debian">Debian</button>
+                <button class="filter-btn" data-os="fedora">Fedora</button>
+                <button class="filter-btn" data-os="rhel">RHEL</button>
+                <button class="filter-btn" data-os="opensuse">openSUSE</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div id="loading" class="loading">Loading package information...</div>
+            <div id="error" class="error hidden"></div>
+            <div id="packages"></div>
+        </div>
+    </div>
+
+    <script>
+        const REPO_OWNER = 'arvaidasre';
+        const REPO_NAME = 'helium-browser-deb';
+        const GITHUB_API = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`;
+        
+        let allPackages = [];
+        let currentFilter = 'all';
+
+        const osMap = {
+            'ubuntu': { type: 'apt', name: 'Ubuntu', arch: ['amd64', 'arm64'] },
+            'debian': { type: 'apt', name: 'Debian', arch: ['amd64', 'arm64'] },
+            'fedora': { type: 'rpm', name: 'Fedora', arch: ['x86_64', 'aarch64'] },
+            'rhel': { type: 'rpm', name: 'RHEL', arch: ['x86_64', 'aarch64'] },
+            'opensuse': { type: 'rpm', name: 'openSUSE', arch: ['x86_64', 'aarch64'] }
+        };
+
+        async function fetchReleases() {
+            try {
+                const response = await fetch(`${GITHUB_API}/releases/latest`);
+                if (!response.ok) throw new Error('Failed to fetch releases');
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching releases:', error);
+                return null;
+            }
+        }
+
+        async function fetchRepoInfo() {
+            try {
+                const response = await fetch(`${GITHUB_API}`);
+                if (!response.ok) throw new Error('Failed to fetch repo info');
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching repo info:', error);
+                return null;
+            }
+        }
+
+        function parsePackages(release) {
+            if (!release || !release.assets) return [];
+            
+            const packages = [];
+            release.assets.forEach(asset => {
+                const name = asset.name;
+                let type = null;
+                let arch = null;
+                let os = null;
+
+                if (name.endsWith('.deb')) {
+                    type = 'apt';
+                    if (name.includes('amd64')) arch = 'amd64';
+                    else if (name.includes('arm64')) arch = 'arm64';
+                    
+                    if (arch) {
+                        packages.push({
+                            name: 'helium-browser',
+                            version: release.tag_name.replace(/^v/, ''),
+                            type: 'apt',
+                            arch: arch,
+                            os: ['ubuntu', 'debian'],
+                            filename: name,
+                            size: asset.size,
+                            downloadUrl: asset.browser_download_url,
+                            releaseDate: new Date(release.published_at)
+                        });
+                    }
+                } else if (name.endsWith('.rpm')) {
+                    type = 'rpm';
+                    if (name.includes('x86_64')) arch = 'x86_64';
+                    else if (name.includes('aarch64')) arch = 'aarch64';
+                    
+                    if (arch) {
+                        packages.push({
+                            name: 'helium-browser',
+                            version: release.tag_name.replace(/^v/, ''),
+                            type: 'rpm',
+                            arch: arch,
+                            os: ['fedora', 'rhel', 'opensuse'],
+                            filename: name,
+                            size: asset.size,
+                            downloadUrl: asset.browser_download_url,
+                            releaseDate: new Date(release.published_at)
+                        });
+                    }
+                }
+            });
+
+            return packages;
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function formatDate(date) {
+            if (!date) return 'Unknown';
+            return new Date(date).toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function getInstallCommand(pkg) {
+            if (pkg.type === 'apt') {
+                return `echo "deb [arch=${pkg.arch} trusted=yes] https://arvaidasre.github.io/helium-browser-deb/apt stable main" | sudo tee /etc/apt/sources.list.d/helium.list\nsudo apt-get update\nsudo apt-get install helium-browser`;
+            } else {
+                return `sudo tee /etc/yum.repos.d/helium.repo << 'EOF'\n[helium]\nname=Helium Browser Repository\nbaseurl=https://arvaidasre.github.io/helium-browser-deb/rpm/\\$basearch\nenabled=1\ngpgcheck=0\nEOF\n\nsudo dnf install helium-browser`;
+            }
+        }
+
+        function renderPackages(packages) {
+            const container = document.getElementById('packages');
+            container.innerHTML = '';
+
+            if (packages.length === 0) {
+                container.innerHTML = '<div class="loading">No packages found for selected filter.</div>';
+                return;
+            }
+
+            const grouped = {};
+            packages.forEach(pkg => {
+                const key = `${pkg.type}-${pkg.arch}`;
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        type: pkg.type,
+                        arch: pkg.arch,
+                        os: pkg.os,
+                        packages: []
+                    };
+                }
+                grouped[key].packages.push(pkg);
+            });
+
+            Object.values(grouped).forEach(group => {
+                const section = document.createElement('div');
+                section.className = 'package-section';
+                
+                const osNames = group.os.map(o => osMap[o].name).join(', ');
+                const typeName = group.type === 'apt' ? 'APT' : 'RPM';
+                
+                section.innerHTML = `
+                    <h2>${typeName} Package (${osNames}) - ${group.arch.toUpperCase()}</h2>
+                    ${group.packages.map(pkg => `
+                        <div class="package-card">
+                            <div class="package-header">
+                                <span class="package-name">${pkg.name}</span>
+                                <span class="package-version">v${pkg.version}</span>
+                            </div>
+                            <div class="package-info">
+                                <div class="info-item">
+                                    <span class="info-label">Architecture</span>
+                                    <span class="info-value">${pkg.arch.toUpperCase()}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Size</span>
+                                    <span class="info-value">${formatBytes(pkg.size)}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Release Date</span>
+                                    <span class="info-value">${formatDate(pkg.releaseDate)}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Download</span>
+                                    <span class="info-value"><a href="${pkg.downloadUrl}" target="_blank">${pkg.filename}</a></span>
+                                </div>
+                            </div>
+                            <div class="install-code">
+                                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
+                                <pre>${getInstallCommand(pkg)}</pre>
+                            </div>
+                        </div>
+                    `).join('')}
+                `;
+                
+                container.appendChild(section);
+            });
+        }
+
+        function filterPackages(os) {
+            currentFilter = os;
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.os === os);
+            });
+
+            let filtered = allPackages;
+            if (os !== 'all') {
+                filtered = allPackages.filter(pkg => pkg.os.includes(os));
+            }
+
+            renderPackages(filtered);
+            document.getElementById('package-count').textContent = filtered.length;
+        }
+
+        function copyToClipboard(btn) {
+            const code = btn.nextElementSibling.textContent.trim();
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = btn.textContent;
+                btn.textContent = 'Copied!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            });
+        }
+
+        async function init() {
+            try {
+                const [release, repoInfo] = await Promise.all([
+                    fetchReleases(),
+                    fetchRepoInfo()
+                ]);
+
+                if (release) {
+                    allPackages = parsePackages(release);
+                    
+                    document.getElementById('latest-version').textContent = release.tag_name.replace(/^v/, '');
+                    document.getElementById('last-updated').textContent = formatDate(release.published_at);
+                    document.getElementById('package-count').textContent = allPackages.length;
+                    
+                    renderPackages(allPackages);
+                } else {
+                    throw new Error('Failed to load release information');
+                }
+
+                document.getElementById('loading').classList.add('hidden');
+                
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        filterPackages(btn.dataset.os);
+                    });
+                });
+            } catch (error) {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('error').classList.remove('hidden');
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
