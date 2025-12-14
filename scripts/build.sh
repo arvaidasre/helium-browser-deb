@@ -166,7 +166,7 @@ fpm -s dir -t deb \
   --depends "libxss1" \
   --depends "libasound2" \
   --depends "libgbm1" \
-  --recommends "apparmor" \
+  --deb-recommends "apparmor" \
   --provides "helium" \
   --conflicts "helium" \
   --replaces "helium" \
@@ -225,7 +225,7 @@ fpm -s dir -t deb \
   --depends "curl" \
   --depends "xz-utils" \
   --depends "tar" \
-  --recommends "apparmor" \
+  --deb-recommends "apparmor" \
   --provides "helium" \
   --conflicts "helium" \
   --replaces "helium" \
