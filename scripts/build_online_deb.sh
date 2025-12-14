@@ -170,6 +170,9 @@ Maintainer: Helium DEB repack <noreply@users.noreply.github.com>
 Homepage: https://github.com/imputnet/helium-linux
 Installed-Size: ${installed_size_kb}
 Depends: ca-certificates, curl, xz-utils, tar
+Provides: helium
+Conflicts: helium
+Replaces: helium
 Description: Helium Browser (online installer)
  This package downloads the official Helium Linux build during install/upgrade
  and installs it into /opt/helium.

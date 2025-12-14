@@ -147,6 +147,9 @@ Maintainer: Helium DEB repack <noreply@users.noreply.github.com>
 Homepage: https://github.com/imputnet/helium-linux
 Installed-Size: ${installed_size_kb}
 Depends: ca-certificates, libgtk-3-0, libnss3, libxss1, libasound2, libgbm1
+Provides: helium
+Conflicts: helium
+Replaces: helium
 Description: Helium Browser (repacked from upstream AppImage)
  This package repacks the official Helium AppImage into a Debian package.
 EOF
