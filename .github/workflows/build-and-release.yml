@@ -40,7 +40,26 @@ jobs:
           release_title="$(cat dist/release_title.txt)"
           rm -f dist/meta.env
           # In case dist/meta.env says SKIPPED=1, there should be no .deb; this step won't run.
-          gh release create "$UPSTREAM_TAG" \
-            --title "$release_title" \
-            --notes-file dist/release_notes.md \
-            dist/*.deb dist/*.rpm dist/SHA256SUMS
+          
+          # Check if this should be a pre-release
+          if [[ "${IS_PRERELEASE}" == "true" ]]; then
+            gh release create "$UPSTREAM_TAG" \
+              --title "$release_title" \
+              --notes-file dist/release_notes.md \
+              --prerelease \
+              dist/*.deb dist/*.rpm dist/SHA256SUMS
+          else
+            # Before creating stable release, delete any existing pre-releases
+            echo "Checking for pre-releases to delete..."
+            prereleases=$(gh release list --limit 100 --json tagName,isPrerelease --jq '.[] | select(.isPrerelease == true) | .tagName')
+            if [[ -n "$prereleases" ]]; then
+              echo "Found pre-releases to delete:"
+              echo "$prereleases"
+              echo "$prereleases" | xargs -I {} gh release delete {} --yes --cleanup-tag || true
+            fi
+            
+            gh release create "$UPSTREAM_TAG" \
+              --title "$release_title" \
+              --notes-file dist/release_notes.md \
+              dist/*.deb dist/*.rpm dist/SHA256SUMS
+          fi

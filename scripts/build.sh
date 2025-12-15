@@ -44,6 +44,15 @@ TAG="$(jq -r '.tag_name' <<<"$JSON")"
 VERSION="$(normalize_version "$TAG")"
 log "Latest version: $VERSION (Tag: $TAG)"
 
+# Check if this is a pre-release
+PRERELEASE="$(jq -r '.prerelease // false' <<<"$JSON")"
+if [[ "$PRERELEASE" == "true" || "$TAG" =~ (alpha|beta|rc|pre|preview) ]]; then
+  IS_PRERELEASE="true"
+  log "Detected pre-release: $TAG"
+else
+  IS_PRERELEASE="false"
+fi
+
 # 2. Check if we should skip (CI only)
 SKIPPED="0"
 if [[ -n "${GITHUB_TOKEN:-}" && -n "${GITHUB_REPOSITORY:-}" ]]; then
@@ -63,6 +72,7 @@ cat >"$OUTDIR/meta.env" <<EOF
 UPSTREAM_TAG=${TAG}
 UPSTREAM_VERSION=${VERSION}
 SKIPPED=${SKIPPED}
+IS_PRERELEASE=${IS_PRERELEASE}
 EOF
 
 if [[ "$SKIPPED" == "1" ]]; then
