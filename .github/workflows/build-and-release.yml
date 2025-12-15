@@ -44,15 +44,3 @@ jobs:
             --title "$release_title" \
             --notes-file dist/release_notes.md \
             dist/*.deb dist/*.rpm dist/SHA256SUMS
-
-      - name: Trigger repository update
-        if: ${{ hashFiles('dist/*.deb') != '' }}
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'update-repos.yml',
-              ref: 'main'
-            })
