@@ -65,7 +65,7 @@ jobs:
           ./scripts/build-prerelease.sh "$TAG"
           
           # Verify we have packages
-          if [[ ! -f dist/*.deb ]]; then
+          if [[ -z "$(ls dist/*.deb 2>/dev/null || true)" ]]; then
             echo "No DEB packages found. Exiting."
             exit 0
           fi
