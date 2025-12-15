@@ -28,6 +28,17 @@ jobs:
         run: |
           set -euo pipefail
           
+          # First check if we already have pre-releases
+          echo "Checking for existing pre-releases in $GITHUB_REPOSITORY..."
+          existing_prereleases=$(gh release list --limit 100 --json tagName,isPrerelease --jq '.[] | select(.isPrerelease == true) | .tagName' || true)
+          
+          if [[ -n "$existing_prereleases" ]]; then
+            echo "Found existing pre-releases:"
+            echo "$existing_prereleases"
+            echo "Pre-releases already exist. Skipping build."
+            exit 0
+          fi
+          
           # Fetch latest release info
           echo "Fetching latest release info from imputnet/helium-linux..."
           API_URL="https://api.github.com/repos/imputnet/helium-linux/releases/latest"
