@@ -72,6 +72,7 @@ gzip -k -f "dists/stable/main/Sources" 2>/dev/null || true
 
 # Generate Release file
 log "Generating Release file..."
+release_date=$(LC_ALL=C date -u +"%a, %d %b %Y %H:%M:%S %Z")
 cat > "dists/stable/Release" <<EOF
 Origin: $REPO_NAME
 Label: $REPO_NAME
@@ -80,7 +81,7 @@ Codename: stable
 Architectures: amd64 arm64
 Components: main
 Description: Helium Browser Repository
-Date: $(date -u +"%a, %d %b %Y %H:%M:%S %Z")
+Date: $release_date
 EOF
 
 # Add checksums (always add, even if files are empty)

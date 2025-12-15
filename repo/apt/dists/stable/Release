@@ -5,18 +5,18 @@ Codename: stable
 Architectures: amd64 arm64
 Components: main
 Description: Helium Browser Repository
-Date: Pr, 15 gruod. 2025 01:50:01 UTC
+Date: Mon, 15 Dec 2025 01:54:59 UTC
 MD5Sum:
  d41d8cd98f00b204e9800998ecf8427e        0 main/binary-amd64/Packages
- 1b7c6da87584c9fe5d9d41ebb079695a       29 main/binary-amd64/Packages.gz
+ 0ec752cbda4a7ad9714a54426a5c69ab       29 main/binary-amd64/Packages.gz
  d41d8cd98f00b204e9800998ecf8427e        0 main/binary-arm64/Packages
- 1b7c6da87584c9fe5d9d41ebb079695a       29 main/binary-arm64/Packages.gz
+ 0ec752cbda4a7ad9714a54426a5c69ab       29 main/binary-arm64/Packages.gz
  d41d8cd98f00b204e9800998ecf8427e        0 main/Sources
- 947866b6cab0f63f327f6d581d41a5d8       28 main/Sources.gz
+ 77fce477dce363c89e04a14b13486685       28 main/Sources.gz
 SHA256:
  e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855        0 main/binary-amd64/Packages
- 92e5c7e3963c5337290364fd8d5224e1e0ac669d003dfe966b9895cd31781c5e       29 main/binary-amd64/Packages.gz
+ 7ec218616cec0e52e5de2eb798fb3c560862208c8ed7b40cf33178117a3a2fb2       29 main/binary-amd64/Packages.gz
  e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855        0 main/binary-arm64/Packages
- 92e5c7e3963c5337290364fd8d5224e1e0ac669d003dfe966b9895cd31781c5e       29 main/binary-arm64/Packages.gz
+ 7ec218616cec0e52e5de2eb798fb3c560862208c8ed7b40cf33178117a3a2fb2       29 main/binary-arm64/Packages.gz
  e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855        0 main/Sources
- 2513ef0bcb1ce06835cf81cb36750b076c3bb0208ee788759e7d52bab0004e1c       28 main/Sources.gz
+ 27369af40e88e96fd09c80f61665362dcaf58c9d86c3aacd87c30b71d849bbba       28 main/Sources.gz
