@@ -28,35 +28,23 @@ jobs:
         run: |
           set -euo pipefail
           
-          # First check if we already have pre-releases
-          echo "Checking for existing pre-releases in $GITHUB_REPOSITORY..."
-          existing_prereleases=$(gh release list --limit 100 --json tagName,isPrerelease --jq '.[] | select(.isPrerelease == true) | .tagName' || true)
-          
-          if [[ -n "$existing_prereleases" ]]; then
-            echo "Found existing pre-releases:"
-            echo "$existing_prereleases"
-            echo "Pre-releases already exist. Skipping build."
-            exit 0
-          fi
-          
-          # Fetch latest release info
-          echo "Fetching latest release info from imputnet/helium-linux..."
-          API_URL="https://api.github.com/repos/imputnet/helium-linux/releases/latest"
+          # Fetch all releases to find pre-releases
+          echo "Fetching all releases from imputnet/helium-linux..."
+          API_URL="https://api.github.com/repos/imputnet/helium-linux/releases"
           JSON="$(curl -fsSL "$API_URL")"
           
-          TAG="$(jq -r '.tag_name' <<<"$JSON")"
-          [[ "$TAG" == "null" || -z "$TAG" ]] && { echo "Could not determine tag name."; exit 1; }
+          # Find the latest pre-release
+          LATEST_PRERELEASE="$(echo "$JSON" | jq -r '[.[] | select(.prerelease == true)][0]')"
           
-          # Check if this is a pre-release
-          PRERELEASE="$(jq -r '.prerelease // false' <<<"$JSON")"
-          if [[ "$PRERELEASE" == "true" || "$TAG" =~ (alpha|beta|rc|pre|preview) ]]; then
-            IS_PRERELEASE="true"
-            echo "Detected pre-release: $TAG"
-          else
-            IS_PRERELEASE="false"
-            echo "Latest release is not a pre-release: $TAG. Exiting."
+          if [[ "$LATEST_PRERELEASE" == "null" || -z "$LATEST_PRERELEASE" ]]; then
+            echo "No pre-releases found. Exiting."
             exit 0
           fi
+          
+          TAG="$(echo "$LATEST_PRERELEASE" | jq -r '.tag_name')"
+          [[ "$TAG" == "null" || -z "$TAG" ]] && { echo "Could not determine tag name."; exit 1; }
+          
+          echo "Found latest pre-release: $TAG"
           
           # Check if pre-release already exists
           if [[ -n "${GITHUB_TOKEN:-}" && -n "${GITHUB_REPOSITORY:-}" ]]; then
