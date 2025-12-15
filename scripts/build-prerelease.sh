@@ -63,7 +63,11 @@ log "Target Architecture: DEB=$DEB_ARCH, RPM=$RPM_ARCH (Pattern: $ASSET_PATTERN)
 
 # Get specific release info for the target tag
 API_URL="https://api.github.com/repos/${UPSTREAM_REPO}/releases/tags/${TAG}"
-JSON="$(curl -fsSL "$API_URL")"
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+  JSON="$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" "$API_URL")"
+else
+  JSON="$(curl -fsSL "$API_URL")"
+fi
 
 TARBALL_URL="$(jq -r --arg pat "$ASSET_PATTERN" '.assets[] | select(.name | test("_linux\\.tar\\.xz$")) | select(.name | test($pat)) | .browser_download_url' <<<"$JSON" | head -n 1)"
 

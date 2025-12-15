@@ -31,7 +31,7 @@ jobs:
           # Fetch all releases to find pre-releases
           echo "Fetching all releases from imputnet/helium-linux..."
           API_URL="https://api.github.com/repos/imputnet/helium-linux/releases"
-          JSON="$(curl -fsSL "$API_URL")"
+          JSON="$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" "$API_URL")"
           
           # Find the latest pre-release
           LATEST_PRERELEASE="$(echo "$JSON" | jq -r '[.[] | select(.prerelease == true)][0]')"
