@@ -8,12 +8,20 @@ This repository provides an easy way to install **Helium Browser** on Linux syst
 
 #### Debian / Ubuntu
 
-Add the repository and install:
+Add the repository and install (auto-detects your system codename and writes a single correct entry):
 
 ```bash
-echo "deb [arch=amd64,arm64 trusted=yes] https://arvaidasre.github.io/helium-browser-deb/apt stable main" | sudo tee /etc/apt/sources.list.d/helium.list
+curl -fsSL https://raw.githubusercontent.com/arvaidasre/helium-browser-deb/main/scripts/install-apt-repo.sh | sudo bash
 sudo apt-get update
 sudo apt-get install helium-browser
+```
+
+Manual option (if you prefer):
+
+```bash
+CODENAME="$(. /etc/os-release && echo ${VERSION_CODENAME:-stable})"
+echo "deb [arch=amd64,arm64 trusted=yes] https://arvaidasre.github.io/helium-browser-deb/apt $CODENAME main" | sudo tee /etc/apt/sources.list.d/helium-browser.list
+sudo apt-get update
 ```
 
 #### Fedora / RHEL / openSUSE

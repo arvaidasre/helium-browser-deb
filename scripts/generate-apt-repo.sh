@@ -6,6 +6,11 @@ REPO_NAME="helium-browser"
 REPO_URL="https://arvaidasre.github.io/helium-browser-deb"
 REPO_DIR="${1:-repo/apt}"
 
+# Publish the same repo content under multiple APT distributions.
+# This lets users use their system codename (e.g. noble, jammy) while keeping one pool.
+# Override in CI via: APT_DISTS="stable noble jammy" ./scripts/generate-apt-repo.sh
+APT_DISTS_DEFAULT=(stable noble jammy focal bookworm bullseye)
+
 # --- Helper Functions ---
 log() { echo -e "\033[1;34m[APT-REPO]\033[0m $*"; }
 err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
@@ -24,6 +29,15 @@ check_deps() {
 check_deps
 
 log "Generating APT repository in $REPO_DIR..."
+
+APT_DISTS=()
+if [[ -n "${APT_DISTS:-}" ]]; then
+  # Split by whitespace
+  # shellcheck disable=SC2206
+  APT_DISTS=(${APT_DISTS})
+else
+  APT_DISTS=("${APT_DISTS_DEFAULT[@]}")
+fi
 
 # Create directory structure
 mkdir -p "$REPO_DIR/dists/stable/main/binary-amd64"
@@ -107,8 +121,26 @@ EOF
   done
 } >> "dists/stable/Release"
 
+# Create per-codename distributions as copies of stable
+log "Publishing distributions: ${APT_DISTS[*]}"
+for dist in "${APT_DISTS[@]}"; do
+  [[ "$dist" == "stable" ]] && continue
+
+  rm -rf "dists/$dist"
+  mkdir -p "dists/$dist"
+  cp -a "dists/stable/"* "dists/$dist/"
+
+  # Adjust metadata headers (checksums stay valid because files are identical)
+  if [[ -f "dists/$dist/Release" ]]; then
+    sed -i \
+      -e "s/^Suite: .*/Suite: $dist/" \
+      -e "s/^Codename: .*/Codename: $dist/" \
+      "dists/$dist/Release"
+  fi
+done
+
 log "APT repository generated successfully!"
 log "Repository location: $REPO_DIR"
 log ""
 log "To use this repository, add to /etc/apt/sources.list.d/helium.list:"
-log "  deb [arch=amd64,arm64] $REPO_URL/apt stable main"
+log "  deb [arch=amd64,arm64] $REPO_URL/apt <codename|stable> main"
