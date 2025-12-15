@@ -1,0 +1,22 @@
+Origin: helium-browser
+Label: helium-browser
+Suite: stable
+Codename: stable
+Architectures: amd64 arm64
+Components: main
+Description: Helium Browser Repository
+Date: Pr, 15 gruod. 2025 01:44:08 UTC
+MD5Sum:
+ d41d8cd98f00b204e9800998ecf8427e        0 main/binary-amd64/Packages
+ acc6a8210dee50edd00fa0bb4cf05f56       29 main/binary-amd64/Packages.gz
+ d41d8cd98f00b204e9800998ecf8427e        0 main/binary-arm64/Packages
+ acc6a8210dee50edd00fa0bb4cf05f56       29 main/binary-arm64/Packages.gz
+ d41d8cd98f00b204e9800998ecf8427e        0 main/Sources
+ f9729c184d3efa0738d7e5d2fa67fc6b       28 main/Sources.gz
+SHA256:
+ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855        0 main/binary-amd64/Packages
+ 15885f9a7ac7cd147f6f15acaf0ed58b6c0efbf35986725b5994e79c4d71f22b       29 main/binary-amd64/Packages.gz
+ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855        0 main/binary-arm64/Packages
+ 15885f9a7ac7cd147f6f15acaf0ed58b6c0efbf35986725b5994e79c4d71f22b       29 main/binary-arm64/Packages.gz
+ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855        0 main/Sources
+ 46be4a9a4ba2f8eaf01a08c7d54ee239d557c622cd2a33bb7d0fb4b36240672e       28 main/Sources.gz
