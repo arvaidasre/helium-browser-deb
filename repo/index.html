@@ -3,535 +3,582 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Helium Browser Repository</title>
+    <title>Helium Browser — Linux Repository</title>
+    <meta name="description" content="Install Helium Browser on Linux via APT or DNF. Fast, secure, privacy-focused.">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="color-scheme" content="light">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --white: #ffffff;
+            --black: #0a0a0a;
+            --gray-50: #fafafa;
+            --gray-100: #f4f4f5;
+            --gray-200: #e4e4e7;
+            --gray-400: #a1a1aa;
+            --gray-500: #71717a;
+            --gray-600: #52525b;
+            --gray-900: #18181b;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+            --shadow-sm: 0 1px 0 rgba(0,0,0,0.04);
+            --shadow-md: 0 14px 35px rgba(0,0,0,0.06);
         }
 
+        html { scroll-behavior: smooth; }
+        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            color: #333;
+            font-family: var(--font);
+            background: var(--gray-50);
+            color: var(--black);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
+        button {
+            font-family: inherit;
+        }
+
+        a:focus-visible,
+        button:focus-visible,
+        summary:focus-visible {
+            outline: 2px solid var(--black);
+            outline-offset: 3px;
+            border-radius: 10px;
+        }
+
+        /* Loading Screen */
+        .loader {
+            position: fixed;
+            inset: 0;
+            background: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.4s ease;
+        }
+        .loader.hide { opacity: 0; pointer-events: none; }
+        .loader-spinner {
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--gray-200);
+            border-top-color: var(--black);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Layout */
+        .wrapper {
+            max-width: 860px;
+            margin: 24px auto;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
             border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: var(--shadow-md);
+            padding: clamp(48px, 7vw, 84px) clamp(16px, 4vw, 24px) clamp(40px, 6vw, 64px);
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: clamp(36px, 6vw, 64px);
+        }
+        .header h1 {
+            font-size: clamp(2rem, 5.5vw, 2.75rem);
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            margin-bottom: 12px;
+        }
+        .header p {
+            color: var(--gray-500);
+            font-size: clamp(1rem, 2.4vw, 1.1rem);
+        }
+
+        .nav {
+            margin-top: 18px;
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+            font-size: 0.9rem;
+        }
+
+        .nav a {
+            color: var(--gray-600);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+        }
+
+        .nav a:hover { border-bottom-color: var(--gray-400); }
+        .versions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .badge:hover { opacity: 0.8; }
+        .badge-dark {
+            background: var(--black);
+            color: var(--white);
+        }
+        .badge-light {
+            background: var(--gray-100);
+            color: var(--gray-600);
+            border: 1px solid var(--gray-200);
+        }
+        .badge code {
+            font-family: var(--mono);
+            font-weight: 600;
+        }
+
+        /* Section */
+        section {
+            margin-bottom: 56px;
+        }
+        section h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.01em;
+        }
+        section > p {
+            color: var(--gray-500);
+            margin-bottom: 20px;
+        }
+
+        /* Cards Grid */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+        }
+        .card {
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 20px;
+            background: var(--white);
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .card:hover {
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-md);
+            }
+        }
+        .card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .card .desc {
+            color: var(--gray-500);
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+
+        /* Code Block */
+        .code-wrap {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
             overflow: hidden;
         }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            opacity: 0.9;
-            font-size: 1.1em;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 30px;
-            background: #f8f9fa;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-
-        .stat-card .label {
-            font-size: 0.9em;
-            color: #666;
-            margin-bottom: 8px;
-        }
-
-        .stat-card .value {
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .filter-section {
-            padding: 30px;
-            background: white;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .filter-group {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .filter-label {
-            font-weight: 600;
-            color: #333;
-        }
-
-        .filter-btn {
-            padding: 10px 20px;
-            border: 2px solid #667eea;
-            background: white;
-            color: #667eea;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.95em;
-            transition: all 0.3s;
-        }
-
-        .filter-btn:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        .filter-btn.active {
-            background: #667eea;
-            color: white;
-        }
-
-        .content {
-            padding: 30px;
-        }
-
-        .package-section {
-            margin-bottom: 40px;
-        }
-
-        .package-section h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.8em;
-        }
-
-        .package-card {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 20px;
-            border-left: 4px solid #667eea;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .package-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .package-header {
+        .code-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            gap: 10px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--gray-100);
         }
-
-        .package-name {
-            font-size: 1.3em;
-            font-weight: bold;
-            color: #333;
+        .code-header span {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
-
-        .package-version {
-            background: #667eea;
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.9em;
-        }
-
-        .package-info {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .info-item {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .info-label {
-            font-size: 0.85em;
-            color: #666;
-            margin-bottom: 5px;
-        }
-
-        .info-value {
-            font-weight: 600;
-            color: #333;
-        }
-
-        .install-code {
-            background: #2d2d2d;
-            color: #f8f8f2;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            overflow-x: auto;
-            margin-top: 15px;
-            position: relative;
-        }
-
         .copy-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #667eea;
-            color: white;
+            background: var(--black);
+            color: var(--white);
             border: none;
-            padding: 5px 15px;
-            border-radius: 5px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
             cursor: pointer;
-            font-size: 0.85em;
+            transition: opacity 0.2s;
+            min-height: 40px;
+            min-width: 72px;
+            touch-action: manipulation;
+        }
+        .copy-btn:hover { opacity: 0.8; }
+        .copy-btn.copied { background: var(--gray-600); }
+        .code-body {
+            padding: 14px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .code-body pre {
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            white-space: pre;
+            color: var(--gray-900);
         }
 
-        .copy-btn:hover {
-            background: #5568d3;
+        /* Accordion */
+        details {
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            background: var(--white);
+        }
+        details[open] { background: var(--gray-50); }
+        summary {
+            padding: 16px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            list-style: none;
+            min-height: 52px;
+        }
+        summary::-webkit-details-marker { display: none; }
+        summary::after {
+            content: "+";
+            font-size: 1.2rem;
+            color: var(--gray-400);
+            transition: transform 0.2s;
+        }
+        details[open] summary::after {
+            content: "−";
+        }
+        .details-content {
+            padding: 0 20px 20px;
         }
 
-        .loading {
+        /* Footer */
+        footer {
             text-align: center;
-            padding: 40px;
-            color: #666;
+            padding-top: 40px;
+            border-top: 1px solid var(--gray-200);
+            color: var(--gray-500);
+            font-size: 0.9rem;
+        }
+        footer a {
+            color: var(--black);
+            text-decoration: none;
+            margin: 0 12px;
+        }
+        footer a:hover { text-decoration: underline; }
+        footer p { margin-top: 16px; }
+
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: calc(18px + env(safe-area-inset-bottom));
+            transform: translateX(-50%) translateY(8px);
+            background: var(--black);
+            color: var(--white);
+            padding: 10px 14px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            z-index: 1100;
+            max-width: calc(100vw - 32px);
+            text-align: center;
+            white-space: normal;
         }
 
-        .error {
-            background: #fee;
-            color: #c33;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px;
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }
 
-        .hidden {
-            display: none;
-        }
-
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2em;
+        /* Responsive */
+        @media (max-width: 600px) {
+            body { background: var(--white); }
+            .wrapper { margin: 0 auto; border: 0; border-radius: 0; box-shadow: none; }
+            .cards { grid-template-columns: 1fr; }
+            .versions { flex-direction: column; width: 100%; }
+            .badge { width: 100%; justify-content: center; }
+            .code-header span { display: none; }
+            .code-header {
+                justify-content: flex-end;
+                background: transparent;
+                border-bottom: 0;
+                padding: 12px 12px 0;
             }
-
-            .stats {
-                grid-template-columns: 1fr;
+            .code-body {
+                padding: 10px 12px 12px;
+                overflow-x: hidden;
             }
+            .code-body pre {
+                font-size: 0.82rem;
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+            .card { padding: 16px; }
+            .copy-btn { min-height: 44px; min-width: 0; border-radius: 999px; }
+            summary { padding: 14px 16px; }
+            .details-content { padding: 0 16px 16px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .loader { transition: none; }
+            .loader-spinner { animation: none; }
+            .card { transition: none; }
+            .toast { transition: none; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 Helium Browser Repository</h1>
-            <p>Automated package repository for Linux distributions</p>
-        </div>
+    <!-- Loading -->
+    <div class="loader" id="loader">
+        <div class="loader-spinner"></div>
+    </div>
 
-        <div class="stats">
-            <div class="stat-card">
-                <div class="label">Latest Version</div>
-                <div class="value" id="latest-version">Loading...</div>
-            </div>
-            <div class="stat-card">
-                <div class="label">Last Updated</div>
-                <div class="value" id="last-updated">Loading...</div>
-            </div>
-            <div class="stat-card">
-                <div class="label">Available Packages</div>
-                <div class="value" id="package-count">Loading...</div>
-            </div>
-        </div>
+    <div class="toast" id="toast" aria-live="polite" aria-atomic="true"></div>
 
-        <div class="filter-section">
-            <div class="filter-group">
-                <span class="filter-label">Filter by OS:</span>
-                <button class="filter-btn active" data-os="all">All</button>
-                <button class="filter-btn" data-os="ubuntu">Ubuntu</button>
-                <button class="filter-btn" data-os="debian">Debian</button>
-                <button class="filter-btn" data-os="fedora">Fedora</button>
-                <button class="filter-btn" data-os="rhel">RHEL</button>
-                <button class="filter-btn" data-os="opensuse">openSUSE</button>
+    <div class="wrapper">
+        <!-- Header -->
+        <header class="header">
+            <h1>Helium Browser</h1>
+            <p>Fast, secure, and privacy-focused browser for Linux</p>
+            <div class="nav">
+                <a href="#install">Install</a>
+                <a href="#manual">Manual</a>
+                <a href="https://github.com/arvaidasre/helium-browser-deb/releases" target="_blank" rel="noopener">Releases</a>
             </div>
-        </div>
+            <div class="versions">
+                <a class="badge badge-dark" id="stableLink" href="https://github.com/arvaidasre/helium-browser-deb/releases" target="_blank" rel="noopener">
+                    Stable <code id="stableVersion">—</code>
+                </a>
+                <a class="badge badge-light" id="preLink" href="https://github.com/arvaidasre/helium-browser-deb/releases" target="_blank" rel="noopener" style="display:none;">
+                    Pre-release <code id="preVersion">—</code>
+                </a>
+            </div>
+        </header>
 
-        <div class="content">
-            <div id="loading" class="loading">Loading package information...</div>
-            <div id="error" class="error hidden"></div>
-            <div id="packages"></div>
-        </div>
+        <!-- Quick Install -->
+        <section id="install">
+            <h2>Quick Install</h2>
+            <p>Run a single command to install. Updates are delivered via your package manager.</p>
+            <div class="cards">
+                <div class="card">
+                    <h3>Debian / Ubuntu</h3>
+                    <p class="desc">Ubuntu, Debian, Linux Mint</p>
+                    <div class="code-wrap">
+                        <div class="code-header">
+                            <span>Terminal</span>
+                            <button class="copy-btn" type="button">Copy</button>
+                        </div>
+                        <div class="code-body">
+                            <pre>curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install.sh | bash</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Fedora / RHEL</h3>
+                    <p class="desc">Fedora, RHEL, CentOS, Rocky</p>
+                    <div class="code-wrap">
+                        <div class="code-header">
+                            <span>Terminal</span>
+                            <button class="copy-btn" type="button">Copy</button>
+                        </div>
+                        <div class="code-body">
+                            <pre>curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Manual Install -->
+        <section id="manual">
+            <h2>Manual Setup</h2>
+            <p>Configure the repository yourself if you prefer manual control.</p>
+
+            <details>
+                <summary>
+                    <span>APT Repository</span>
+                </summary>
+                <div class="details-content">
+                    <div class="code-wrap">
+                        <div class="code-header">
+                            <span>Terminal</span>
+                            <button class="copy-btn" type="button">Copy</button>
+                        </div>
+                        <div class="code-body">
+                            <pre>echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/helium-browser-deb/apt stable main" | sudo tee /etc/apt/sources.list.d/helium-browser.list
+sudo apt update
+sudo apt install helium-browser</pre>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <details>
+                <summary>
+                    <span>RPM Repository</span>
+                </summary>
+                <div class="details-content">
+                    <div class="code-wrap">
+                        <div class="code-header">
+                            <span>Terminal</span>
+                            <button class="copy-btn" type="button">Copy</button>
+                        </div>
+                        <div class="code-body">
+                            <pre>sudo tee /etc/yum.repos.d/helium.repo &lt;&lt; 'EOF'
+[helium]
+name=Helium Browser
+baseurl=https://arvaidasre.github.io/helium-browser-deb/rpm/$basearch
+enabled=1
+gpgcheck=0
+EOF
+
+sudo dnf install helium-browser</pre>
+                        </div>
+                    </div>
+                </div>
+            </details>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div>
+                <a href="https://github.com/arvaidasre/helium-browser-deb" target="_blank" rel="noopener">GitHub</a>
+                <a href="https://github.com/imputnet/helium-linux" target="_blank" rel="noopener">Upstream</a>
+                <a href="https://github.com/arvaidasre/helium-browser-deb/issues" target="_blank" rel="noopener">Issues</a>
+            </div>
+            <p>&copy; 2025 Arvaidas Rekis</p>
+        </footer>
     </div>
 
     <script>
-        const REPO_OWNER = 'arvaidasre';
-        const REPO_NAME = 'helium-browser-deb';
-        const GITHUB_API = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`;
-        
-        let allPackages = [];
-        let currentFilter = 'all';
-
-        const osMap = {
-            'ubuntu': { type: 'apt', name: 'Ubuntu', arch: ['amd64', 'arm64'] },
-            'debian': { type: 'apt', name: 'Debian', arch: ['amd64', 'arm64'] },
-            'fedora': { type: 'rpm', name: 'Fedora', arch: ['x86_64', 'aarch64'] },
-            'rhel': { type: 'rpm', name: 'RHEL', arch: ['x86_64', 'aarch64'] },
-            'opensuse': { type: 'rpm', name: 'openSUSE', arch: ['x86_64', 'aarch64'] }
-        };
-
-        async function fetchReleases() {
-            try {
-                const response = await fetch(`${GITHUB_API}/releases/latest`);
-                if (!response.ok) throw new Error('Failed to fetch releases');
-                return await response.json();
-            } catch (error) {
-                console.error('Error fetching releases:', error);
-                return null;
-            }
-        }
-
-        async function fetchRepoInfo() {
-            try {
-                const response = await fetch(`${GITHUB_API}`);
-                if (!response.ok) throw new Error('Failed to fetch repo info');
-                return await response.json();
-            } catch (error) {
-                console.error('Error fetching repo info:', error);
-                return null;
-            }
-        }
-
-        function parsePackages(release) {
-            if (!release || !release.assets) return [];
-            
-            const packages = [];
-            release.assets.forEach(asset => {
-                const name = asset.name;
-                let type = null;
-                let arch = null;
-                let os = null;
-
-                if (name.endsWith('.deb')) {
-                    type = 'apt';
-                    if (name.includes('amd64')) arch = 'amd64';
-                    else if (name.includes('arm64')) arch = 'arm64';
-                    
-                    if (arch) {
-                        packages.push({
-                            name: 'helium-browser',
-                            version: release.tag_name.replace(/^v/, ''),
-                            type: 'apt',
-                            arch: arch,
-                            os: ['ubuntu', 'debian'],
-                            filename: name,
-                            size: asset.size,
-                            downloadUrl: asset.browser_download_url,
-                            releaseDate: new Date(release.published_at)
-                        });
+        (function() {
+            // Fetch versions
+            async function loadVersions() {
+                try {
+                    const res = await fetch('https://api.github.com/repos/arvaidasre/helium-browser-deb/releases?per_page=20');
+                    if (!res.ok) throw new Error();
+                    const data = await res.json();
+                    let stable = null, pre = null;
+                    for (const r of data) {
+                        if (!r.draft && !r.prerelease && !stable) stable = r;
+                        if (!r.draft && r.prerelease && !pre) pre = r;
+                        if (stable && pre) break;
                     }
-                } else if (name.endsWith('.rpm')) {
-                    type = 'rpm';
-                    if (name.includes('x86_64')) arch = 'x86_64';
-                    else if (name.includes('aarch64')) arch = 'aarch64';
-                    
-                    if (arch) {
-                        packages.push({
-                            name: 'helium-browser',
-                            version: release.tag_name.replace(/^v/, ''),
-                            type: 'rpm',
-                            arch: arch,
-                            os: ['fedora', 'rhel', 'opensuse'],
-                            filename: name,
-                            size: asset.size,
-                            downloadUrl: asset.browser_download_url,
-                            releaseDate: new Date(release.published_at)
-                        });
+                    if (stable) {
+                        document.getElementById('stableVersion').textContent = stable.tag_name;
+                        document.getElementById('stableLink').href = stable.html_url;
                     }
+                    if (pre) {
+                        document.getElementById('preVersion').textContent = pre.tag_name;
+                        document.getElementById('preLink').href = pre.html_url;
+                        document.getElementById('preLink').style.display = 'inline-flex';
+                    }
+                } catch (e) {
+                    document.getElementById('stableVersion').textContent = 'v0.7.5.1';
                 }
-            });
-
-            return packages;
-        }
-
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        }
-
-        function formatDate(date) {
-            if (!date) return 'Unknown';
-            return new Date(date).toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-
-        function getInstallCommand(pkg) {
-            if (pkg.type === 'apt') {
-                return `echo "deb [arch=${pkg.arch} trusted=yes] https://arvaidasre.github.io/helium-browser-deb/apt stable main" | sudo tee /etc/apt/sources.list.d/helium.list\nsudo apt-get update\nsudo apt-get install helium-browser`;
-            } else {
-                return `sudo tee /etc/yum.repos.d/helium.repo << 'EOF'\n[helium]\nname=Helium Browser Repository\nbaseurl=https://arvaidasre.github.io/helium-browser-deb/rpm/\\$basearch\nenabled=1\ngpgcheck=0\nEOF\n\nsudo dnf install helium-browser`;
-            }
-        }
-
-        function renderPackages(packages) {
-            const container = document.getElementById('packages');
-            container.innerHTML = '';
-
-            if (packages.length === 0) {
-                container.innerHTML = '<div class="loading">No packages found for selected filter.</div>';
-                return;
             }
 
-            const grouped = {};
-            packages.forEach(pkg => {
-                const key = `${pkg.type}-${pkg.arch}`;
-                if (!grouped[key]) {
-                    grouped[key] = {
-                        type: pkg.type,
-                        arch: pkg.arch,
-                        os: pkg.os,
-                        packages: []
-                    };
-                }
-                grouped[key].packages.push(pkg);
-            });
+            function showToast(message) {
+                const toast = document.getElementById('toast');
+                if (!toast) return;
 
-            Object.values(grouped).forEach(group => {
-                const section = document.createElement('div');
-                section.className = 'package-section';
-                
-                const osNames = group.os.map(o => osMap[o].name).join(', ');
-                const typeName = group.type === 'apt' ? 'APT' : 'RPM';
-                
-                section.innerHTML = `
-                    <h2>${typeName} Package (${osNames}) - ${group.arch.toUpperCase()}</h2>
-                    ${group.packages.map(pkg => `
-                        <div class="package-card">
-                            <div class="package-header">
-                                <span class="package-name">${pkg.name}</span>
-                                <span class="package-version">v${pkg.version}</span>
-                            </div>
-                            <div class="package-info">
-                                <div class="info-item">
-                                    <span class="info-label">Architecture</span>
-                                    <span class="info-value">${pkg.arch.toUpperCase()}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Size</span>
-                                    <span class="info-value">${formatBytes(pkg.size)}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Release Date</span>
-                                    <span class="info-value">${formatDate(pkg.releaseDate)}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Download</span>
-                                    <span class="info-value"><a href="${pkg.downloadUrl}" target="_blank">${pkg.filename}</a></span>
-                                </div>
-                            </div>
-                            <div class="install-code">
-                                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
-                                <pre>${getInstallCommand(pkg)}</pre>
-                            </div>
-                        </div>
-                    `).join('')}
-                `;
-                
-                container.appendChild(section);
-            });
-        }
-
-        function filterPackages(os) {
-            currentFilter = os;
-            
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.os === os);
-            });
-
-            let filtered = allPackages;
-            if (os !== 'all') {
-                filtered = allPackages.filter(pkg => pkg.os.includes(os));
+                toast.textContent = message;
+                toast.classList.add('show');
+                clearTimeout(showToast._t);
+                showToast._t = setTimeout(() => toast.classList.remove('show'), 1400);
             }
 
-            renderPackages(filtered);
-            document.getElementById('package-count').textContent = filtered.length;
-        }
-
-        function copyToClipboard(btn) {
-            const code = btn.nextElementSibling.textContent.trim();
-            navigator.clipboard.writeText(code).then(() => {
-                const originalText = btn.textContent;
-                btn.textContent = 'Copied!';
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                }, 2000);
-            });
-        }
-
-        async function init() {
-            try {
-                const [release, repoInfo] = await Promise.all([
-                    fetchReleases(),
-                    fetchRepoInfo()
-                ]);
-
-                if (release) {
-                    allPackages = parsePackages(release);
-                    
-                    document.getElementById('latest-version').textContent = release.tag_name.replace(/^v/, '');
-                    document.getElementById('last-updated').textContent = formatDate(release.published_at);
-                    document.getElementById('package-count').textContent = allPackages.length;
-                    
-                    renderPackages(allPackages);
-                } else {
-                    throw new Error('Failed to load release information');
+            function copyFallback(text) {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.setAttribute('readonly', '');
+                ta.style.position = 'fixed';
+                ta.style.top = '-1000px';
+                ta.style.left = '-1000px';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                ta.setSelectionRange(0, ta.value.length);
+                let ok = false;
+                try {
+                    ok = document.execCommand('copy');
+                } catch (e) {
+                    ok = false;
                 }
+                document.body.removeChild(ta);
+                return ok;
+            }
 
-                document.getElementById('loading').classList.add('hidden');
-                
-                document.querySelectorAll('.filter-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        filterPackages(btn.dataset.os);
+            async function copyText(text) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                }
+                return copyFallback(text);
+            }
+
+            function setupCopy() {
+                document.querySelectorAll('.code-wrap').forEach(wrap => {
+                    const btn = wrap.querySelector('.copy-btn');
+                    const pre = wrap.querySelector('pre');
+                    if (!btn || !pre) return;
+                    btn.addEventListener('click', async () => {
+                        try {
+                            const text = (pre.textContent || '').replace(/\n+$/g, '');
+                            const ok = await copyText(text);
+                            if (!ok) throw new Error('Copy failed');
+                            btn.textContent = 'Copied';
+                            btn.classList.add('copied');
+                            showToast('Copied to clipboard');
+                            setTimeout(() => {
+                                btn.textContent = 'Copy';
+                                btn.classList.remove('copied');
+                            }, 1500);
+                        } catch (e) {
+                            showToast('Copy failed — select and copy manually');
+                        }
                     });
                 });
-            } catch (error) {
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('error').classList.remove('hidden');
-                document.getElementById('error').textContent = `Error: ${error.message}`;
             }
-        }
 
-        init();
+            // Init
+            window.addEventListener('load', () => {
+                loadVersions();
+                setupCopy();
+                setTimeout(() => {
+                    const loader = document.getElementById('loader');
+                    loader.classList.add('hide');
+                    setTimeout(() => loader.remove(), 400);
+                }, 300);
+            });
+        })();
     </script>
 </body>
 </html>

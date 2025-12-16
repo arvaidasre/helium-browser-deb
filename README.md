@@ -1,27 +1,39 @@
-# Helium Browser (Unofficial .deb & .rpm)
+# Helium Browser Repository
 
-This repository provides an easy way to install **Helium Browser** on Linux systems. It automatically tracks the [official upstream releases](https://github.com/imputnet/helium-linux) and builds both `.deb` (Debian/Ubuntu) and `.rpm` (Fedora/RHEL/openSUSE) packages.
+[![Build Status](https://github.com/arvaidasre/helium-browser-deb/workflows/Build%20DEB%20and%20RPM%20from%20upstream%20Tarball/badge.svg)](https://github.com/arvaidasre/helium-browser-deb/actions)
+[![Update Repos](https://github.com/arvaidasre/helium-browser-deb/workflows/Update%20APT%20and%20RPM%20Repositories/badge.svg)](https://github.com/arvaidasre/helium-browser-deb/actions)
 
-## 🚀 Install
+This repository provides automated packages of [Helium Browser](https://github.com/imputnet/helium-linux) for Linux distributions.
 
-### Option 1: Using APT/RPM Repository (Recommended)
+## 🚀 Quick Install
 
-#### Debian / Ubuntu
+### Debian / Ubuntu / Linux Mint
+```bash
+curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install.sh | bash
+```
 
-Add the repository and install (auto-detects your system codename and writes a single correct entry):
+### Fedora / RHEL / CentOS / Rocky Linux
+```bash
+curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
+```
 
+## 📦 Manual Installation
+
+### APT (Debian/Ubuntu)
+
+**Option 1: Using our install script (Recommended)**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/arvaidasre/helium-browser-deb/main/scripts/install-apt-repo.sh | sudo bash
 sudo apt-get update
 sudo apt-get install helium-browser
 ```
 
-Manual option (if you prefer):
-
+**Option 2: Manual repository setup**
 ```bash
 CODENAME="$(. /etc/os-release && echo ${VERSION_CODENAME:-stable})"
-echo "deb [arch=amd64,arm64 trusted=yes] https://arvaidasre.github.io/helium-browser-deb/apt $CODENAME main" | sudo tee /etc/apt/sources.list.d/helium-browser.list
+echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/helium-browser-deb/apt $CODENAME main" | sudo tee /etc/apt/sources.list.d/helium-browser.list
 sudo apt-get update
+sudo apt-get install helium-browser
 ```
 
 #### Fedora / RHEL / openSUSE
