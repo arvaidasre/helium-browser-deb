@@ -27,6 +27,10 @@ normalize_version() {
   echo "$v"
 }
 
+get_assets_summary() {
+  jq -r '(.assets // []) | map(.name) | if length == 0 then "(none)" else join("\n") end' <<<"$1"
+}
+
 # --- Main Logic ---
 
 check_deps
@@ -89,14 +93,28 @@ esac
 
 log "Target Architecture: DEB=$DEB_ARCH, RPM=$RPM_ARCH (Pattern: $ASSET_PATTERN)"
 
-TARBALL_URL="$(jq -r --arg pat "$ASSET_PATTERN" '.assets[] | select(.name | test("_linux\\.tar\\.xz$")) | select(.name | test($pat)) | .browser_download_url' <<<"$JSON" | head -n 1)"
+ASSET_COUNT="$(jq -r '(.assets // []) | length' <<<"$JSON")"
+if [[ "$ASSET_COUNT" == "0" ]]; then
+  err "Upstream release $TAG has no assets. Available assets:\n$(get_assets_summary "$JSON")"
+fi
+
+TARBALL_URL="$(jq -r --arg pat "$ASSET_PATTERN" '(.assets // [])[]
+  | select(.name | test("linux"; "i"))
+  | select(.name | test("\\.tar\\.(xz|gz|zst|bz2)$"; "i"))
+  | select(.name | test($pat; "i"))
+  | .browser_download_url' <<<"$JSON" | head -n 1)"
 
 # Fallbacks
 if [[ -z "$TARBALL_URL" ]]; then
-  TARBALL_URL="$(jq -r '.assets[] | select(.name | test("_linux\\.tar\\.xz$")) | .browser_download_url' <<<"$JSON" | head -n 1)"
+  TARBALL_URL="$(jq -r '(.assets // [])[]
+    | select(.name | test("linux"; "i"))
+    | select(.name | test("\\.tar\\.(xz|gz|zst|bz2)$"; "i"))
+    | .browser_download_url' <<<"$JSON" | head -n 1)"
 fi
 
-[[ -z "$TARBALL_URL" ]] && err "Tarball asset not found."
+if [[ -z "$TARBALL_URL" ]]; then
+  err "Tarball asset not found for $TAG (arch pattern: $ASSET_PATTERN). Available assets:\n$(get_assets_summary "$JSON")"
+fi
 
 log "Tarball: $TARBALL_URL"
 
@@ -118,8 +136,16 @@ mkdir -p "$OFFLINE_ROOT/opt/helium" "$OFFLINE_ROOT/usr/bin" "$OFFLINE_ROOT/usr/s
 
 # Download and Extract Tarball
 log "Downloading Tarball..."
-curl -fsSL "$TARBALL_URL" -o "$WORKDIR/helium.tar.xz"
-tar -xf "$WORKDIR/helium.tar.xz" -C "$WORKDIR"
+TARBALL_FILE="${TARBALL_URL##*/}"
+EXT="${TARBALL_FILE##*.}"
+if [[ "$TARBALL_FILE" == *.tar.* ]]; then
+  TARBALL_PATH="$WORKDIR/$TARBALL_FILE"
+else
+  TARBALL_PATH="$WORKDIR/helium.tar.$EXT"
+fi
+
+curl -fsSL "$TARBALL_URL" -o "$TARBALL_PATH"
+tar -xf "$TARBALL_PATH" -C "$WORKDIR"
 
 # Locate extracted directory
 EXTRACTED_DIR="$(find "$WORKDIR" -maxdepth 1 -type d -name "helium*" | head -n 1)"
