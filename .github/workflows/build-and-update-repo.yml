@@ -78,8 +78,9 @@ jobs:
       - name: Generate index page
         run: |
           mkdir -p repo
+          rm -f repo/index.html
           if [ -f "scripts/index.html.template" ]; then
-            cp scripts/index.html.template repo/index.html
+            cp -f scripts/index.html.template repo/index.html
           fi
 
       - name: Setup Pages
