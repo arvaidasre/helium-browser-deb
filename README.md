@@ -1,4 +1,4 @@
-# <img src="https://raw.githubusercontent.com/arvaidasre/helium-browser-deb/main/repo/index.html" width="32" height="32" style="display:none"> Helium Browser Linux Repository
+# <img src="https://avatars.githubusercontent.com/u/234597297?v=4" width="32" height="32"> Helium Browser Linux Repository
 
 <p align="center">
   <img src="https://img.shields.io/badge/Status-Automated-success?style=for-the-badge&logo=github-actions&logoColor=white" alt="Status">

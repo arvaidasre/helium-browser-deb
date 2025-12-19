@@ -87,18 +87,19 @@
         }
 
         .logo {
-            width: 64px;
-            height: 64px;
-            background: var(--accent);
-            border-radius: 16px;
+            width: 80px;
+            height: 80px;
             margin: 0 auto 1.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 2rem;
-            font-weight: 700;
-            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
         }
 
         h1 {
@@ -314,7 +315,9 @@
     </div>
 
     <header>
-        <div class="logo"><i class="fa-brands fa-chrome"></i></div>
+        <div class="logo">
+            <img src="https://avatars.githubusercontent.com/u/234597297?v=4" alt="Helium Logo">
+        </div>
         <h1>Helium Browser</h1>
         <p class="subtitle" id="t-subtitle">Fast, secure and privacy-respecting browser for Linux users.</p>
         <div id="version-container" class="version-badge" style="display: none;">
