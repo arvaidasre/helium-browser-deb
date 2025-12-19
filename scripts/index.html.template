@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="lt">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Helium Browser — Linux Repository</title>
-    <meta name="description" content="Oficiali Helium Browser repozitorija Linux sistemoms.">
+    <meta name="description" content="Official Helium Browser repository for Linux systems.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -47,7 +47,37 @@
         .container {
             max-width: 800px;
             margin: 0 auto;
-            padding: 4rem 1.5rem;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        .lang-switcher {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .lang-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .lang-btn:hover {
+            border-color: var(--accent);
+            color: var(--fg);
+        }
+
+        .lang-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
         }
 
         header {
@@ -80,6 +110,7 @@
         .subtitle {
             color: var(--muted);
             font-size: 1.125rem;
+            min-height: 1.5em;
         }
 
         .version-badge {
@@ -139,6 +170,7 @@
             color: var(--muted);
             font-size: 0.875rem;
             margin-bottom: 1.25rem;
+            min-height: 2.5em;
         }
 
         .code-block {
@@ -241,31 +273,37 @@
 <body>
 
 <div class="container">
+    <div class="lang-switcher">
+        <button class="lang-btn active" onclick="setLang('en')">EN</button>
+        <button class="lang-btn" onclick="setLang('lt')">LT</button>
+        <button class="lang-btn" onclick="setLang('ru')">RU</button>
+    </div>
+
     <header>
         <div class="logo">He</div>
         <h1>Helium Browser</h1>
-        <p class="subtitle">Greita, saugi ir privatumą gerbianti naršyklė Linux vartotojams.</p>
+        <p class="subtitle" id="t-subtitle">Fast, secure and privacy-respecting browser for Linux users.</p>
         <div id="version-container" class="version-badge" style="display: none;">
             <span id="latest-version">...</span>
         </div>
     </header>
 
     <section>
-        <h2>⚡ Greitas diegimas</h2>
+        <h2 id="t-quick-install">⚡ Quick Install</h2>
         <div class="grid">
             <div class="card">
                 <h3>Ubuntu / Debian</h3>
-                <p>Skirta Ubuntu, Debian, Linux Mint ir kt.</p>
+                <p id="t-for-ubuntu">For Ubuntu, Debian, Linux Mint, etc.</p>
                 <div class="code-block">
-                    <button class="copy-btn" onclick="copyText(this)">Kopijuoti</button>
+                    <button class="copy-btn" id="t-copy-1" onclick="copyText(this)">Copy</button>
                     <pre>curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install.sh | bash</pre>
                 </div>
             </div>
             <div class="card">
                 <h3>Fedora / RPM</h3>
-                <p>Skirta Fedora, RHEL, CentOS, Rocky.</p>
+                <p id="t-for-fedora">For Fedora, RHEL, CentOS, Rocky.</p>
                 <div class="code-block">
-                    <button class="copy-btn" onclick="copyText(this)">Kopijuoti</button>
+                    <button class="copy-btn" id="t-copy-2" onclick="copyText(this)">Copy</button>
                     <pre>curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash</pre>
                 </div>
             </div>
@@ -273,13 +311,13 @@
     </section>
 
     <section class="manual-setup">
-        <h2>🛠 Rankinis konfigūravimas</h2>
+        <h2 id="t-manual-setup">🛠 Manual Setup</h2>
         <details>
-            <summary>APT repozitorija (Debian/Ubuntu)</summary>
+            <summary id="t-apt-title">APT Repository (Debian/Ubuntu)</summary>
             <div class="details-content">
-                <p style="margin-bottom: 1rem; font-size: 0.875rem; color: var(--muted);">Pridėkite repozitoriją prie savo sistemos rankiniu būdu:</p>
+                <p id="t-apt-desc" style="margin-bottom: 1rem; font-size: 0.875rem; color: var(--muted);">Add the repository to your system manually:</p>
                 <div class="code-block">
-                    <button class="copy-btn" onclick="copyText(this)">Kopijuoti</button>
+                    <button class="copy-btn" id="t-copy-3" onclick="copyText(this)">Copy</button>
                     <pre>echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/helium-browser-deb/apt stable main" | sudo tee /etc/apt/sources.list.d/helium-browser.list
 sudo apt update
 sudo apt install helium-browser</pre>
@@ -288,11 +326,11 @@ sudo apt install helium-browser</pre>
         </details>
 
         <details>
-            <summary>RPM repozitorija (Fedora/RHEL)</summary>
+            <summary id="t-rpm-title">RPM Repository (Fedora/RHEL)</summary>
             <div class="details-content">
-                <p style="margin-bottom: 1rem; font-size: 0.875rem; color: var(--muted);">Sukurkite repozitorijos failą:</p>
+                <p id="t-rpm-desc" style="margin-bottom: 1rem; font-size: 0.875rem; color: var(--muted);">Create the repository file:</p>
                 <div class="code-block">
-                    <button class="copy-btn" onclick="copyText(this)">Kopijuoti</button>
+                    <button class="copy-btn" id="t-copy-4" onclick="copyText(this)">Copy</button>
                     <pre>sudo tee /etc/yum.repos.d/helium.repo << 'EOF'
 [helium]
 name=Helium Browser
@@ -307,23 +345,113 @@ sudo dnf install helium-browser</pre>
     </section>
 
     <footer>
-        <p>Projektas prižiūrimas <a href="https://github.com/arvaidasre/helium-browser-deb" target="_blank">GitHub</a></p>
+        <p><span id="t-maintained">Project maintained on</span> <a href="https://github.com/arvaidasre/helium-browser-deb" target="_blank">GitHub</a></p>
         <p style="margin-top: 0.5rem; opacity: 0.7;">&copy; 2025 Arvaidas Rekis. Upstream: <a href="https://github.com/imputnet/helium-linux" target="_blank">Helium Linux</a></p>
     </footer>
 </div>
 
-<div id="toast" class="toast">Nukopijuota!</div>
+<div id="toast" class="toast">Copied!</div>
 
 <script>
+    const translations = {
+        en: {
+            subtitle: "Fast, secure and privacy-respecting browser for Linux users.",
+            latest_version_prefix: "Latest version: ",
+            quick_install: "⚡ Quick Install",
+            for_ubuntu: "For Ubuntu, Debian, Linux Mint, etc.",
+            for_fedora: "For Fedora, RHEL, CentOS, Rocky.",
+            manual_setup: "🛠 Manual Setup",
+            apt_title: "APT Repository (Debian/Ubuntu)",
+            rpm_title: "RPM Repository (Fedora/RHEL)",
+            apt_desc: "Add the repository to your system manually:",
+            rpm_desc: "Create the repository file:",
+            copy: "Copy",
+            copied_toast: "Copied!",
+            maintained: "Project maintained on"
+        },
+        lt: {
+            subtitle: "Greita, saugi ir privatumą gerbianti naršyklė Linux vartotojams.",
+            latest_version_prefix: "Naujausia versija: ",
+            quick_install: "⚡ Greitas diegimas",
+            for_ubuntu: "Skirta Ubuntu, Debian, Linux Mint ir kt.",
+            for_fedora: "Skirta Fedora, RHEL, CentOS, Rocky.",
+            manual_setup: "🛠 Rankinis konfigūravimas",
+            apt_title: "APT repozitorija (Debian/Ubuntu)",
+            rpm_title: "RPM repozitorija (Fedora/RHEL)",
+            apt_desc: "Pridėkite repozitoriją prie savo sistemos rankiniu būdu:",
+            rpm_desc: "Sukurkite repozitorijos failą:",
+            copy: "Kopijuoti",
+            copied_toast: "Nukopijuota!",
+            maintained: "Projektas prižiūrimas"
+        },
+        ru: {
+            subtitle: "Быстрый, безопасный и уважающий конфиденциальность браузер для пользователей Linux.",
+            latest_version_prefix: "Последняя версия: ",
+            quick_install: "⚡ Быстрая установка",
+            for_ubuntu: "Для Ubuntu, Debian, Linux Mint и др.",
+            for_fedora: "Для Fedora, RHEL, CentOS, Rocky.",
+            manual_setup: "🛠 Ручная настройка",
+            apt_title: "APT репозиторий (Debian/Ubuntu)",
+            rpm_title: "RPM репозиторий (Fedora/RHEL)",
+            apt_desc: "Добавьте репозиторий в свою систему вручную:",
+            rpm_desc: "Создайте файл репозитория:",
+            copy: "Копировать",
+            copied_toast: "Скопировано!",
+            maintained: "Проект поддерживается на"
+        }
+    };
+
+    let currentLang = 'en';
+    let latestVersionTag = '';
+
     async function loadVersion() {
         try {
             const res = await fetch('https://api.github.com/repos/arvaidasre/helium-browser-deb/releases/latest');
             if (res.ok) {
                 const data = await res.json();
-                document.getElementById('latest-version').textContent = 'Naujausia versija: ' + data.tag_name;
+                latestVersionTag = data.tag_name;
+                updateVersionDisplay();
                 document.getElementById('version-container').style.display = 'inline-flex';
             }
         } catch (e) {}
+    }
+
+    function updateVersionDisplay() {
+        if (latestVersionTag) {
+            document.getElementById('latest-version').textContent = translations[currentLang].latest_version_prefix + latestVersionTag;
+        }
+    }
+
+    function setLang(lang) {
+        currentLang = lang;
+        document.documentElement.lang = lang;
+        
+        // Update active button
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.textContent.toLowerCase() === lang);
+        });
+
+        // Update texts
+        const t = translations[lang];
+        document.getElementById('t-subtitle').textContent = t.subtitle;
+        document.getElementById('t-quick-install').textContent = t.quick_install;
+        document.getElementById('t-for-ubuntu').textContent = t.for_ubuntu;
+        document.getElementById('t-for-fedora').textContent = t.for_fedora;
+        document.getElementById('t-manual-setup').textContent = t.manual_setup;
+        document.getElementById('t-apt-title').textContent = t.apt_title;
+        document.getElementById('t-rpm-title').textContent = t.rpm_title;
+        document.getElementById('t-apt-desc').textContent = t.apt_desc;
+        document.getElementById('t-rpm-desc').textContent = t.rpm_desc;
+        document.getElementById('t-maintained').textContent = t.maintained;
+        
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            if (btn.textContent !== '✓') btn.textContent = t.copy;
+        });
+
+        document.getElementById('toast').textContent = t.copied_toast;
+        
+        updateVersionDisplay();
+        localStorage.setItem('preferred-lang', lang);
     }
 
     function copyText(btn) {
@@ -336,10 +464,19 @@ sudo dnf install helium-browser</pre>
             
             const originalText = btn.textContent;
             btn.textContent = '✓';
-            setTimeout(() => btn.textContent = originalText, 2000);
+            setTimeout(() => {
+                btn.textContent = translations[currentLang].copy;
+            }, 2000);
         });
     }
 
+    // Auto-detect or use stored preference
+    const storedLang = localStorage.getItem('preferred-lang');
+    const browserLang = navigator.language.split('-')[0];
+    const initialLang = (storedLang && translations[storedLang]) ? storedLang : 
+                        (translations[browserLang] ? browserLang : 'en');
+    
+    setLang(initialLang);
     loadVersion();
 </script>
 
