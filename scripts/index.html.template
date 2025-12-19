@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Helium Browser — Linux Repository</title>
     <meta name="description" content="Official Helium Browser repository for Linux systems.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -313,22 +314,23 @@
     </div>
 
     <header>
-        <div class="logo">He</div>
+        <div class="logo"><i class="fa-brands fa-chrome"></i></div>
         <h1>Helium Browser</h1>
         <p class="subtitle" id="t-subtitle">Fast, secure and privacy-respecting browser for Linux users.</p>
         <div id="version-container" class="version-badge" style="display: none;">
+            <i class="fa-solid fa-code-branch" style="margin-right: 0.5rem;"></i>
             <span id="latest-version">...</span>
         </div>
     </header>
 
     <section>
-        <h2 id="t-quick-install">⚡ Quick Install</h2>
+        <h2 id="t-quick-install"><i class="fa-solid fa-bolt"></i> Quick Install</h2>
         <div class="grid">
             <div class="card">
-                <h3>Ubuntu / Debian</h3>
+                <h3><i class="fa-brands fa-ubuntu"></i> Ubuntu / Debian</h3>
                 <p id="t-for-ubuntu">For Ubuntu, Debian, Linux Mint, etc.</p>
                 <div class="code-block">
-                    <button class="copy-btn" id="t-copy-1" onclick="copyText(this)">Copy</button>
+                    <button class="copy-btn" id="t-copy-1" onclick="copyText(this)"><i class="fa-regular fa-copy"></i></button>
                     <pre>curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install.sh | bash</pre>
                 </div>
                 <div class="download-area" id="deb-downloads">
@@ -336,10 +338,10 @@
                 </div>
             </div>
             <div class="card">
-                <h3>Fedora / RPM</h3>
+                <h3><i class="fa-brands fa-fedora"></i> Fedora / RPM</h3>
                 <p id="t-for-fedora">For Fedora, RHEL, CentOS, Rocky.</p>
                 <div class="code-block">
-                    <button class="copy-btn" id="t-copy-2" onclick="copyText(this)">Copy</button>
+                    <button class="copy-btn" id="t-copy-2" onclick="copyText(this)"><i class="fa-regular fa-copy"></i></button>
                     <pre>curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash</pre>
                 </div>
                 <div class="download-area" id="rpm-downloads">
@@ -350,13 +352,13 @@
     </section>
 
     <section class="manual-setup">
-        <h2 id="t-manual-setup">🛠 Manual Setup</h2>
+        <h2 id="t-manual-setup"><i class="fa-solid fa-gear"></i> Manual Setup</h2>
         <details>
-            <summary id="t-apt-title">APT Repository (Debian/Ubuntu)</summary>
+            <summary id="t-apt-title"><i class="fa-solid fa-terminal"></i> APT Repository (Debian/Ubuntu)</summary>
             <div class="details-content">
                 <p id="t-apt-desc" style="margin-bottom: 1rem; font-size: 0.875rem; color: var(--muted);">Add the repository to your system manually:</p>
                 <div class="code-block">
-                    <button class="copy-btn" id="t-copy-3" onclick="copyText(this)">Copy</button>
+                    <button class="copy-btn" id="t-copy-3" onclick="copyText(this)"><i class="fa-regular fa-copy"></i></button>
                     <pre>echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/helium-browser-deb/apt stable main" | sudo tee /etc/apt/sources.list.d/helium-browser.list
 sudo apt update
 sudo apt install helium-browser</pre>
@@ -365,11 +367,11 @@ sudo apt install helium-browser</pre>
         </details>
 
         <details>
-            <summary id="t-rpm-title">RPM Repository (Fedora/RHEL)</summary>
+            <summary id="t-rpm-title"><i class="fa-solid fa-terminal"></i> RPM Repository (Fedora/RHEL)</summary>
             <div class="details-content">
                 <p id="t-rpm-desc" style="margin-bottom: 1rem; font-size: 0.875rem; color: var(--muted);">Create the repository file:</p>
                 <div class="code-block">
-                    <button class="copy-btn" id="t-copy-4" onclick="copyText(this)">Copy</button>
+                    <button class="copy-btn" id="t-copy-4" onclick="copyText(this)"><i class="fa-regular fa-copy"></i></button>
                     <pre>sudo tee /etc/yum.repos.d/helium.repo << 'EOF'
 [helium]
 name=Helium Browser
@@ -384,7 +386,7 @@ sudo dnf install helium-browser</pre>
     </section>
 
     <footer>
-        <p><span id="t-maintained">Project maintained on</span> <a href="https://github.com/arvaidasre/helium-browser-deb" target="_blank">GitHub</a></p>
+        <p><span id="t-maintained">Project maintained on</span> <a href="https://github.com/arvaidasre/helium-browser-deb" target="_blank"><i class="fa-brands fa-github"></i> GitHub</a></p>
         <p style="margin-top: 0.5rem; opacity: 0.7;">&copy; 2025 Arvaidas Rekis. Upstream: <a href="https://github.com/imputnet/helium-linux" target="_blank">Helium Linux</a></p>
     </footer>
 </div>
@@ -489,7 +491,7 @@ sudo dnf install helium-browser</pre>
             if (arch === 'ARM64') btn.classList.add('secondary');
             
             const t = translations[currentLang];
-            btn.innerHTML = `<span>${t.download_btn} ${name.endsWith('.deb') ? '.deb' : '.rpm'} (${arch})</span>`;
+            btn.innerHTML = `<span><i class="fa-solid fa-download"></i> ${t.download_btn} ${name.endsWith('.deb') ? '.deb' : '.rpm'} (${arch})</span>`;
             
             if (name.endsWith('.deb')) {
                 debContainer.appendChild(btn);
@@ -528,7 +530,8 @@ sudo dnf install helium-browser</pre>
         document.getElementById('t-maintained').textContent = t.maintained;
         
         document.querySelectorAll('.copy-btn').forEach(btn => {
-            if (btn.textContent !== '✓') btn.textContent = t.copy;
+            if (btn.querySelector('.fa-check')) return;
+            btn.innerHTML = '<i class="fa-regular fa-copy"></i>';
         });
 
         document.getElementById('toast').textContent = t.copied_toast;
@@ -546,10 +549,10 @@ sudo dnf install helium-browser</pre>
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 2000);
             
-            const originalText = btn.textContent;
-            btn.textContent = '✓';
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i>';
             setTimeout(() => {
-                btn.textContent = translations[currentLang].copy;
+                btn.innerHTML = originalIcon;
             }, 2000);
         });
     }

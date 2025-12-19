@@ -1,105 +1,96 @@
-# Helium Browser Repository
+# <img src="https://raw.githubusercontent.com/arvaidasre/helium-browser-deb/main/repo/index.html" width="32" height="32" style="display:none"> Helium Browser Linux Repository
 
-[![Build Status](https://github.com/arvaidasre/helium-browser-deb/workflows/Build%20DEB%20and%20RPM%20from%20upstream%20Tarball/badge.svg)](https://github.com/arvaidasre/helium-browser-deb/actions)
-[![Update Repos](https://github.com/arvaidasre/helium-browser-deb/workflows/Update%20APT%20and%20RPM%20Repositories/badge.svg)](https://github.com/arvaidasre/helium-browser-deb/actions)
+<p align="center">
+  <img src="https://img.shields.io/badge/Status-Automated-success?style=for-the-badge&logo=github-actions&logoColor=white" alt="Status">
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License">
+  <img src="https://img.shields.io/badge/Platform-Linux-lightgrey?style=for-the-badge&logo=linux&logoColor=white" alt="Platform">
+</p>
 
-This repository provides automated packages of [Helium Browser](https://github.com/imputnet/helium-linux) for Linux distributions.
+<p align="center">
+  <b>Automated Packaging & Repository for Helium Browser</b>
+  <br>
+  <i>Fast, secure, and privacy-focused browsing for Linux.</i>
+</p>
 
-## 🚀 Quick Install
+<p align="center">
+  <a href="#-english"><b>English</b></a> • 
+  <a href="#-lietuvių"><b>Lietuvių</b></a> • 
+  <a href="#-русский"><b>Русский</b></a>
+</p>
 
-### Debian / Ubuntu / Linux Mint
+---
+
+## 🇺🇸 English
+
+This repository provides automated, up-to-date packages of [Helium Browser](https://github.com/imputnet/helium-linux).
+
+### <img src="https://img.shields.io/badge/Quick_Install-2563eb?style=flat-square&logo=rocket&logoColor=white" height="24">
+
+**![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=flat-square&logo=ubuntu&logoColor=white) ![Debian](https://img.shields.io/badge/Debian-A81D33?style=flat-square&logo=debian&logoColor=white) ![Mint](https://img.shields.io/badge/Linux_Mint-27AE60?style=flat-square&logo=linux-mint&logoColor=white) Debian / Ubuntu / Mint:**
 ```bash
 curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install.sh | bash
 ```
 
-### Fedora / RHEL / CentOS / Rocky Linux
+**![Fedora](https://img.shields.io/badge/Fedora-51A2DA?style=flat-square&logo=fedora&logoColor=white) ![RedHat](https://img.shields.io/badge/RHEL-CC0000?style=flat-square&logo=red-hat&logoColor=white) Fedora / RHEL / CentOS:**
 ```bash
 curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
 ```
 
-## 📦 Manual Installation
+### <img src="https://img.shields.io/badge/Manual_Setup-6b7280?style=flat-square&logo=gear&logoColor=white" height="24">
+Visit our **[Web Page](https://arvaidasre.github.io/helium-browser-deb/)** for detailed instructions or download files from [Releases](../../releases).
 
-### APT (Debian/Ubuntu)
+---
 
-**Option 1: Using our install script (Recommended)**
+## 🇱🇹 Lietuvių
+
+Ši repozitorija pateikia automatiškai paruoštus [Helium Browser](https://github.com/imputnet/helium-linux) paketus.
+
+### <img src="https://img.shields.io/badge/Greitas_Diegimas-2563eb?style=flat-square&logo=rocket&logoColor=white" height="24">
+
+**Debian / Ubuntu / Mint:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/arvaidasre/helium-browser-deb/main/scripts/install-apt-repo.sh | sudo bash
-sudo apt-get update
-sudo apt-get install helium-browser
+curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install.sh | bash
 ```
 
-**Option 2: Manual repository setup**
+**Fedora / RHEL / CentOS:**
 ```bash
-CODENAME="$(. /etc/os-release && echo ${VERSION_CODENAME:-stable})"
-echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/helium-browser-deb/apt $CODENAME main" | sudo tee /etc/apt/sources.list.d/helium-browser.list
-sudo apt-get update
-sudo apt-get install helium-browser
+curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
 ```
 
-#### Fedora / RHEL / openSUSE
+### <img src="https://img.shields.io/badge/Rankinis_Nustatymas-6b7280?style=flat-square&logo=gear&logoColor=white" height="24">
+Apsilankykite **[interneto svetainėje](https://arvaidasre.github.io/helium-browser-deb/)** arba atsisiųskite failus iš [Releases skilties](../../releases).
 
-Create a repository file:
+---
 
+## 🇷🇺 Русский
+
+Этот репозиторий предоставляет актуальные пакеты [Helium Browser](https://github.com/imputnet/helium-linux).
+
+### <img src="https://img.shields.io/badge/Быстрая_Установка-2563eb?style=flat-square&logo=rocket&logoColor=white" height="24">
+
+**Debian / Ubuntu / Mint:**
 ```bash
-sudo tee /etc/yum.repos.d/helium.repo <<EOF
-[helium]
-name=Helium Browser Repository
-baseurl=https://arvaidasre.github.io/helium-browser-deb/rpm/\$basearch
-enabled=1
-gpgcheck=0
-EOF
-
-sudo dnf install helium-browser
-# or for openSUSE:
-# sudo zypper install helium-browser
+curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install.sh | bash
 ```
 
-### Option 2: Direct Download
+**Fedora / RHEL / CentOS:**
+```bash
+curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
+```
 
-You can also download the latest packages directly from the [Releases page](../../releases).
+### <img src="https://img.shields.io/badge/Ручная_Настройка-6b7280?style=flat-square&logo=gear&logoColor=white" height="24">
+Посетите нашу **[веб-страницу](https://arvaidasre.github.io/helium-browser-deb/)** или скачайте файлы из [раздела релизов](../../releases).
 
-#### Debian / Ubuntu
-1.  Download the `helium-browser_...deb` file.
-2.  Install it using `apt`:
-    ```bash
-    sudo apt-get update
-    sudo apt-get install ./helium-browser_*.deb
-    ```
+---
 
-#### Fedora / RHEL / openSUSE
-1.  Download the `helium-browser-...rpm` file.
-2.  Install it using `dnf` or `zypper`:
-    ```bash
-    sudo dnf install ./helium-browser-*.rpm
-    # or
-    sudo zypper install ./helium-browser-*.rpm
-    ```
+## 🛠️ Project Info
 
-## 🛠️ Building Locally
+| System | Status |
+| :--- | :--- |
+| **Build Pipeline** | [![Build Status](https://github.com/arvaidasre/helium-browser-deb/workflows/Build%20DEB%20and%20RPM%20from%20upstream%20Tarball/badge.svg)](https://github.com/arvaidasre/helium-browser-deb/actions) |
+| **Repo Maintenance** | [![Update Repos](https://github.com/arvaidasre/helium-browser-deb/workflows/Update%20APT%20and%20RPM%20Repositories/badge.svg)](https://github.com/arvaidasre/helium-browser-deb/actions) |
 
-If you want to build the package yourself:
+- **Automation**: ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white)
+- **Upstream**: [imputnet/helium-linux](https://github.com/imputnet/helium-linux)
 
-1.  **Install dependencies:**
-    ```bash
-    sudo apt-get update
-    sudo apt-get install -y curl jq ruby ruby-dev build-essential
-    sudo gem install fpm
-    ```
-
-2.  **Run the build script:**
-    ```bash
-    ./scripts/build.sh
-    ```
-    The artifacts will be created in the `dist/` directory.
-
-## ℹ️ How it Works
-
-*   **GitHub Actions** checks for new upstream releases daily at 3:00 AM UTC.
-*   **FPM** is used to package the upstream tarball into proper Debian and RPM packages.
-*   **APT and RPM repositories** are automatically generated and published to [arvaidasre.github.io/helium-browser-deb](https://arvaidasre.github.io/helium-browser-deb) via GitHub Pages.
-*   **Repositories are automatically updated daily** at 4:00 AM UTC to ensure the latest packages are available.
-
-## 🔗 Upstream Project
-
-This is an unofficial packaging project. The actual browser is developed here:
-https://github.com/imputnet/helium-linux
+&copy; 2025 Arvaidas Rekis.
