@@ -60,6 +60,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p dist
+          # Clean dist to ensure we only have what we download
+          rm -rf dist/*
           # Download latest release packages
           LATEST_RELEASE=$(gh api repos/${{ github.repository }}/releases/latest --jq '.tag_name')
           if [ -n "$LATEST_RELEASE" ] && [ "$LATEST_RELEASE" != "null" ]; then
@@ -68,6 +70,17 @@ jobs:
           else
             echo "No releases found"
           fi
+
+      - name: Prepare repo directory
+        run: |
+          # If repo/ is committed, we might want to clean it before regenerating
+          # to ensure old versions in pool/ or x86_64/ are gone.
+          # Keep the directory structure but remove existing packages if they might be stale.
+          find repo -name "*.deb" -delete
+          find repo -name "*.rpm" -delete
+          # Also clean metadata
+          rm -rf repo/apt/dists/*
+          rm -rf repo/rpm/*/repodata
 
       - name: Generate APT repository
         run: |

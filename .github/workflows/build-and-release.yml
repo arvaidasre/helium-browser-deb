@@ -2,9 +2,9 @@ name: Build DEB and RPM from upstream Tarball
 
 on:
   workflow_dispatch:
-  schedule:
-    # daily
-    - cron: '23 3 * * *'
+#  schedule:
+#    # daily
+#    - cron: '23 3 * * *'
 
 permissions:
   contents: write

@@ -2,9 +2,9 @@ name: Build Pre-release DEB and RPM from upstream Tarball
 
 on:
   workflow_dispatch:
-  schedule:
-    # Check every 4 hours for pre-releases
-    - cron: '0 */4 * * *'
+#  schedule:
+#    # Check every 4 hours for pre-releases
+#    - cron: '0 */4 * * *'
 
 permissions:
   contents: write
@@ -60,6 +60,31 @@ jobs:
             
             if [[ "$HTTP_CODE" == "200" ]]; then
               echo "Pre-release $TAG already exists. Skipping build."
+              exit 0
+            fi
+
+            # Check if this pre-release is older than our latest stable release
+            echo "Fetching latest stable release from $GITHUB_REPOSITORY..."
+            STABLE_JSON="$(curl -sS -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest")"
+            STABLE_TAG="$(echo "$STABLE_JSON" | jq -r '.tag_name')"
+            
+            if [[ -n "$STABLE_TAG" && "$STABLE_TAG" != "null" ]]; then
+              echo "Latest stable release is $STABLE_TAG. Comparing with $TAG..."
+              # Improved version comparison: only proceed if TAG is logically newer than STABLE_TAG
+              # or if it's the same base version but a prerelease
+              if [[ "$(printf '%s\n%s' "$TAG" "$STABLE_TAG" | sort -V | head -n1)" == "$TAG" && "$TAG" != "$STABLE_TAG" ]]; then
+                echo "Pre-release $TAG is logically older than stable $STABLE_TAG. Skipping build."
+                exit 0
+              fi
+            fi
+            
+            # Also check creation date of upstream release - don't build very old stuff
+            UPSTREAM_CREATED_AT="$(echo "$LATEST_PRERELEASE" | jq -r '.created_at')"
+            echo "Upstream pre-release created at: $UPSTREAM_CREATED_AT"
+            # If it's older than 2025-12-01, it's definitely "old" for this repo
+            if [[ "$UPSTREAM_CREATED_AT" < "2025-12-01" ]]; then
+              echo "Upstream pre-release is too old (pre-dating repo work). Skipping."
               exit 0
             fi
           fi

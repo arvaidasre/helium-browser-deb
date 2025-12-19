@@ -69,6 +69,15 @@ if [[ -n "${GITHUB_TOKEN:-}" && -n "${GITHUB_REPOSITORY:-}" ]]; then
     log "Release $TAG already exists. Skipping build."
     SKIPPED="1"
   fi
+
+  # Also check creation date of upstream release - don't build very old stuff
+  UPSTREAM_CREATED_AT="$(jq -r '.created_at' <<<"$JSON")"
+  log "Upstream release created at: $UPSTREAM_CREATED_AT"
+  # If it's older than 2025-12-01, it's definitely "old" for this repo
+  if [[ "$UPSTREAM_CREATED_AT" < "2025-12-01" ]]; then
+    log "Upstream release is too old (pre-dating repo work). Skipping."
+    SKIPPED="1"
+  fi
 fi
 
 # Save metadata for GitHub Actions

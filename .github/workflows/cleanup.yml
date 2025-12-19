@@ -1,0 +1,58 @@
+name: Cleanup Old Releases
+
+on:
+  workflow_dispatch:
+    inputs:
+      keep_latest:
+        description: 'Number of latest stable releases to keep'
+        default: '5'
+        required: true
+      delete_prereleases:
+        description: 'Delete all pre-releases'
+        default: 'true'
+        type: boolean
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cleanup releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          
+          # 1. Delete all pre-releases if requested
+          if [[ "${{ github.event.inputs.delete_prereleases }}" == "true" ]]; then
+            echo "Checking for pre-releases to delete..."
+            prereleases=$(gh release list --limit 100 --json tagName,isPrerelease --jq '.[] | select(.isPrerelease == true) | .tagName')
+            if [[ -n "$prereleases" ]]; then
+              echo "Deleting pre-releases:"
+              echo "$prereleases"
+              echo "$prereleases" | xargs -I {} gh release delete {} --yes --cleanup-tag
+            else
+              echo "No pre-releases found."
+            fi
+          fi
+          
+          # 2. Delete old stable releases
+          KEEP=${{ github.event.inputs.keep_latest }}
+          echo "Keeping latest $KEEP stable releases..."
+          
+          all_stable=$(gh release list --limit 100 --json tagName,isPrerelease,createdAt --jq '.[] | select(.isPrerelease == false) | .tagName')
+          count=$(echo "$all_stable" | wc -l)
+          
+          if [ "$count" -gt "$KEEP" ]; then
+            to_delete=$(echo "$all_stable" | tail -n +$(($KEEP + 1)))
+            echo "Deleting old stable releases:"
+            echo "$to_delete"
+            echo "$to_delete" | xargs -I {} gh release delete {} --yes --cleanup-tag
+          else
+            echo "Already have $count or fewer stable releases. Nothing to delete."
+          fi
+
