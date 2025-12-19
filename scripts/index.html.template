@@ -173,6 +173,39 @@
             min-height: 2.5em;
         }
 
+        .download-area {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: var(--fg);
+            color: var(--bg);
+            text-decoration: none;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-1px);
+            opacity: 0.9;
+        }
+
+        .download-btn.secondary {
+            background: var(--accent-soft);
+            color: var(--accent);
+            border: 1px solid var(--border);
+        }
+
         .code-block {
             background: var(--code-bg);
             border-radius: 12px;
@@ -298,6 +331,9 @@
                     <button class="copy-btn" id="t-copy-1" onclick="copyText(this)">Copy</button>
                     <pre>curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install.sh | bash</pre>
                 </div>
+                <div class="download-area" id="deb-downloads">
+                    <!-- Dynamic buttons -->
+                </div>
             </div>
             <div class="card">
                 <h3>Fedora / RPM</h3>
@@ -305,6 +341,9 @@
                 <div class="code-block">
                     <button class="copy-btn" id="t-copy-2" onclick="copyText(this)">Copy</button>
                     <pre>curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash</pre>
+                </div>
+                <div class="download-area" id="rpm-downloads">
+                    <!-- Dynamic buttons -->
                 </div>
             </div>
         </div>
@@ -367,7 +406,10 @@ sudo dnf install helium-browser</pre>
             rpm_desc: "Create the repository file:",
             copy: "Copy",
             copied_toast: "Copied!",
-            maintained: "Project maintained on"
+            maintained: "Project maintained on",
+            download_manual: "Download .deb manually",
+            download_manual_rpm: "Download .rpm manually",
+            download_btn: "Download"
         },
         lt: {
             subtitle: "Greita, saugi ir privatumą gerbianti naršyklė Linux vartotojams.",
@@ -382,7 +424,10 @@ sudo dnf install helium-browser</pre>
             rpm_desc: "Sukurkite repozitorijos failą:",
             copy: "Kopijuoti",
             copied_toast: "Nukopijuota!",
-            maintained: "Projektas prižiūrimas"
+            maintained: "Projektas prižiūrimas",
+            download_manual: "Atsisiųsti .deb rankiniu būdu",
+            download_manual_rpm: "Atsisiųsti .rpm rankiniu būdu",
+            download_btn: "Atsisiųsti"
         },
         ru: {
             subtitle: "Быстрый, безопасный и уважающий конфиденциальность браузер для пользователей Linux.",
@@ -397,12 +442,16 @@ sudo dnf install helium-browser</pre>
             rpm_desc: "Создайте файл репозитория:",
             copy: "Копировать",
             copied_toast: "Скопировано!",
-            maintained: "Проект поддерживается на"
+            maintained: "Проект поддерживается на",
+            download_manual: "Скачать .deb вручную",
+            download_manual_rpm: "Скачать .rpm вручную",
+            download_btn: "Скачать"
         }
     };
 
     let currentLang = 'en';
     let latestVersionTag = '';
+    let latestAssets = [];
 
     async function loadVersion() {
         try {
@@ -410,10 +459,44 @@ sudo dnf install helium-browser</pre>
             if (res.ok) {
                 const data = await res.json();
                 latestVersionTag = data.tag_name;
+                latestAssets = data.assets;
                 updateVersionDisplay();
+                updateDownloadButtons();
                 document.getElementById('version-container').style.display = 'inline-flex';
             }
         } catch (e) {}
+    }
+
+    function updateDownloadButtons() {
+        const debContainer = document.getElementById('deb-downloads');
+        const rpmContainer = document.getElementById('rpm-downloads');
+        if (!debContainer || !rpmContainer) return;
+        
+        debContainer.innerHTML = '';
+        rpmContainer.innerHTML = '';
+
+        latestAssets.forEach(asset => {
+            const name = asset.name.toLowerCase();
+            let arch = '';
+            if (name.includes('amd64') || name.includes('x86_64')) arch = 'x64';
+            else if (name.includes('arm64') || name.includes('aarch64')) arch = 'ARM64';
+
+            if (!arch) return;
+
+            const btn = document.createElement('a');
+            btn.href = asset.browser_download_url;
+            btn.className = 'download-btn';
+            if (arch === 'ARM64') btn.classList.add('secondary');
+            
+            const t = translations[currentLang];
+            btn.innerHTML = `<span>${t.download_btn} ${name.endsWith('.deb') ? '.deb' : '.rpm'} (${arch})</span>`;
+            
+            if (name.endsWith('.deb')) {
+                debContainer.appendChild(btn);
+            } else if (name.endsWith('.rpm')) {
+                rpmContainer.appendChild(btn);
+            }
+        });
     }
 
     function updateVersionDisplay() {
@@ -451,6 +534,7 @@ sudo dnf install helium-browser</pre>
         document.getElementById('toast').textContent = t.copied_toast;
         
         updateVersionDisplay();
+        updateDownloadButtons();
         localStorage.setItem('preferred-lang', lang);
     }
 
@@ -470,12 +554,28 @@ sudo dnf install helium-browser</pre>
         });
     }
 
-    // Auto-detect or use stored preference
-    const storedLang = localStorage.getItem('preferred-lang');
-    const browserLang = navigator.language.split('-')[0];
-    const initialLang = (storedLang && translations[storedLang]) ? storedLang : 
-                        (translations[browserLang] ? browserLang : 'en');
-    
+    function getPreferredLanguage() {
+        // 1. Pirmiausia tikriname, ar vartotojas jau rankiniu būdu pasirinko kalbą anksčiau
+        const stored = localStorage.getItem('preferred-lang');
+        if (stored && translations[stored]) return stored;
+
+        // 2. Tikriname sistemos/naršyklės kalbų sąrašą (prioriteto tvarka)
+        if (navigator.languages) {
+            for (const lang of navigator.languages) {
+                const short = lang.split('-')[0];
+                if (translations[short]) return short;
+            }
+        }
+
+        // 3. Senesnių naršyklių palaikymas
+        const navLang = (navigator.language || navigator.userLanguage || '').split('-')[0];
+        if (translations[navLang]) return navLang;
+
+        // 4. Standartinė kalba, jei nieko neradome
+        return 'en';
+    }
+
+    const initialLang = getPreferredLanguage();
     setLang(initialLang);
     loadVersion();
 </script>
