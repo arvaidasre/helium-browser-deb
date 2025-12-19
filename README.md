@@ -13,14 +13,14 @@
 </p>
 
 <p align="center">
-  <a href="#-english"><b>English</b></a> • 
-  <a href="#-lietuvių"><b>Lietuvių</b></a> • 
-  <a href="#-русский"><b>Русский</b></a>
+  <i>Click on your language to see instructions / Pasirinkite kalbą instrukcijoms / Выберите язык для инструкций</i>
 </p>
 
 ---
 
-## 🇺🇸 English
+<details>
+<summary><b>🇺🇸 English - Click to expand</b></summary>
+<br>
 
 This repository provides automated, up-to-date packages of [Helium Browser](https://github.com/imputnet/helium-linux).
 
@@ -39,9 +39,13 @@ curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
 ### <img src="https://img.shields.io/badge/Manual_Setup-6b7280?style=flat-square&logo=gear&logoColor=white" height="24">
 Visit our **[Web Page](https://arvaidasre.github.io/helium-browser-deb/)** for detailed instructions or download files from [Releases](../../releases).
 
+</details>
+
 ---
 
-## 🇱🇹 Lietuvių
+<details>
+<summary><b>🇱🇹 Lietuvių - Išskleisti instrukcijas</b></summary>
+<br>
 
 Ši repozitorija pateikia automatiškai paruoštus [Helium Browser](https://github.com/imputnet/helium-linux) paketus.
 
@@ -60,9 +64,13 @@ curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
 ### <img src="https://img.shields.io/badge/Rankinis_Nustatymas-6b7280?style=flat-square&logo=gear&logoColor=white" height="24">
 Apsilankykite **[interneto svetainėje](https://arvaidasre.github.io/helium-browser-deb/)** arba atsisiųskite failus iš [Releases skilties](../../releases).
 
+</details>
+
 ---
 
-## 🇷🇺 Русский
+<details>
+<summary><b>🇷🇺 Русский - Показать инструкции</b></summary>
+<br>
 
 Этот репозиторий предоставляет актуальные пакеты [Helium Browser](https://github.com/imputnet/helium-linux).
 
@@ -80,6 +88,8 @@ curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
 
 ### <img src="https://img.shields.io/badge/Ручная_Настройка-6b7280?style=flat-square&logo=gear&logoColor=white" height="24">
 Посетите нашу **[веб-страницу](https://arvaidasre.github.io/helium-browser-deb/)** или скачайте файлы из [раздела релизов](../../releases).
+
+</details>
 
 ---
 
