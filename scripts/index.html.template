@@ -1,885 +1,347 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="lt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Helium Browser Repository</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Helium Browser — Linux Repository</title>
+    <meta name="description" content="Oficiali Helium Browser repozitorija Linux sistemoms.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         :root {
-            --primary: #2563eb;
-            --primary-dark: #1e40af;
-            --secondary: #0891b2;
-            --accent: #0ea5e9;
-            --bg-dark: #0a0e1a;
-            --bg-card: #141824;
-            --text-primary: #e2e8f0;
-            --text-secondary: #94a3b8;
-            --border: #1e293b;
-            --success: #10b981;
+            --bg: #ffffff;
+            --fg: #111827;
+            --muted: #6b7280;
+            --border: #e5e7eb;
+            --accent: #2563eb;
+            --accent-soft: #eff6ff;
+            --card-bg: #f9fafb;
+            --code-bg: #111827;
+            --code-fg: #f3f4f6;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
         }
 
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #030712;
+                --fg: #f9fafb;
+                --muted: #9ca3af;
+                --border: #1f2937;
+                --accent: #3b82f6;
+                --accent-soft: #172554;
+                --card-bg: #111827;
+                --code-bg: #000000;
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg-dark);
-            color: var(--text-primary);
-            min-height: 100vh;
-            line-height: 1.6;
-        }
-
-        .hero {
-            background: linear-gradient(135deg, #1e3a8a 0%, #0c4a6e 50%, #164e63 100%);
-            padding: 80px 20px 120px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" stroke-opacity="0.1" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-            animation: gridMove 20s linear infinite;
-        }
-
-        @keyframes gridMove {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(40px); }
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--fg);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
-            padding: 0 20px;
-            position: relative;
-            z-index: 1;
+            padding: 4rem 1.5rem;
         }
 
-        .hero-content {
+        header {
             text-align: center;
-            animation: fadeInUp 0.8s ease-out;
+            margin-bottom: 4rem;
         }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .logo {
+            width: 64px;
+            height: 64px;
+            background: var(--accent);
+            border-radius: 16px;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
         }
 
-        .hero h1 {
-            font-size: clamp(2.5rem, 5vw, 4rem);
+        h1 {
+            font-size: 2.5rem;
             font-weight: 800;
-            margin-bottom: 20px;
-            text-shadow: 0 2px 20px rgba(0,0,0,0.3);
-            letter-spacing: -0.02em;
+            letter-spacing: -0.025em;
+            margin-bottom: 0.5rem;
         }
 
-        .hero p {
-            font-size: 1.25rem;
-            opacity: 0.95;
-            margin-bottom: 30px;
+        .subtitle {
+            color: var(--muted);
+            font-size: 1.125rem;
         }
 
-        .badge {
+        .version-badge {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            background: rgba(255,255,255,0.2);
-            backdrop-filter: blur(10px);
-            padding: 8px 20px;
-            border-radius: 50px;
-            font-size: 0.9rem;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255,255,255,0.3);
-        }
-
-        .stats-wrapper {
-            margin-top: -60px;
-            position: relative;
-            z-index: 2;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 30px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: var(--primary);
-            transform: scaleX(0);
-            transition: transform 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--primary);
-            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
-        }
-
-        .stat-card:hover::before {
-            transform: scaleX(1);
-        }
-
-        .stat-icon {
-            font-size: 2rem;
-            margin-bottom: 15px;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .filter-section {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 30px;
-            margin-bottom: 40px;
-        }
-
-        .filter-label {
+            background: var(--accent-soft);
+            color: var(--accent);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
             font-weight: 600;
-            margin-bottom: 15px;
-            display: block;
-            color: var(--text-primary);
+            margin-top: 1rem;
         }
 
-        .filter-group {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
+        section {
+            margin-bottom: 3rem;
         }
 
-        .filter-btn {
-            padding: 12px 24px;
-            border: 2px solid var(--border);
-            background: transparent;
-            color: var(--text-secondary);
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .filter-btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: var(--primary);
-            transform: translate(-50%, -50%);
-            transition: width 0.3s ease, height 0.3s ease;
-            z-index: -1;
-        }
-
-        .filter-btn:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-
-        .filter-btn:hover {
-            border-color: var(--primary);
-            color: var(--text-primary);
-        }
-
-        .filter-btn.active {
-            background: var(--primary);
-            border-color: transparent;
-            color: white;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-        }
-
-        .package-grid {
-            display: grid;
-            gap: 24px;
-        }
-
-        .package-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 30px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .package-card::after {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: var(--primary);
-            border-radius: 20px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: -1;
-        }
-
-        .package-card:hover {
-            transform: translateY(-5px);
-            border-color: transparent;
-        }
-
-        .package-card:hover::after {
-            opacity: 1;
-        }
-
-        .package-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .package-title {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .package-icon {
-            width: 50px;
-            height: 50px;
-            background: var(--primary);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        h2 {
             font-size: 1.5rem;
-        }
-
-        /* Minimalist Icon Styles */
-        .minimalist-icon {
-            width: 60px;
-            height: 60px;
-            background: #000;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-
-        .minimalist-icon i {
-            color: #fff;
-            font-size: 2rem;
-        }
-
-        .minimalist-icon::before {
-            content: '';
-            position: absolute;
-            inset: 3px;
-            border-radius: 10px;
-            border: 2px solid rgba(255,255,255,0.1);
-        }
-
-        .package-name {
-            font-size: 1.4rem;
             font-weight: 700;
-        }
-
-        .package-version {
-            background: var(--primary);
-            color: white;
-            padding: 8px 20px;
-            border-radius: 50px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-        }
-
-        .package-meta {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 20px;
-            margin-bottom: 25px;
-            padding: 20px;
-            background: rgba(37, 99, 235, 0.05);
-            border-radius: 12px;
-            border: 1px solid rgba(37, 99, 235, 0.1);
-        }
-
-        .meta-item {
+            margin-bottom: 1.5rem;
             display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .meta-label {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .meta-value {
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .meta-value a {
-            color: #ffffff;            
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .meta-value a:hover {
-            color: var(--secondary);
-        }
-
-        .install-section {
-            background: #0a0f1e;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid var(--border);
-        }
-
-        .install-header {
-            display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
-            background: rgba(37, 99, 235, 0.08);
-            border-bottom: 1px solid var(--border);
+            gap: 0.5rem;
         }
 
-        .install-title {
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 640px) {
+            .grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .card h3 {
+            font-size: 1.125rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            color: var(--muted);
+            font-size: 0.875rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .code-block {
+            background: var(--code-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            position: relative;
+            margin-top: 0.5rem;
+        }
+
+        pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            color: var(--code-fg);
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
         }
 
         .copy-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .copy-btn:hover {
-            background: var(--primary-dark);
-            transform: scale(1.05);
-        }
-
-        .copy-btn:active {
-            transform: scale(0.95);
-        }
-
-        .install-code {
-            padding: 20px;
-            font-family: 'Fira Code', 'Courier New', monospace;
-            font-size: 0.9rem;
-            line-height: 1.8;
-            overflow-x: auto;
-            color: #f8f8f2;
-        }
-
-        .install-code pre {
-            margin: 0;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-secondary);
-        }
-
-        .loading-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg-dark);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
-        }
-
-        .loading-screen.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        .loading-logo {
-            font-size: 4rem;
-            margin-bottom: 30px;
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
-
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            position: relative;
-            margin-bottom: 30px;
-        }
-
-        .loading-spinner::before,
-        .loading-spinner::after {
-            content: '';
             position: absolute;
-            border-radius: 50%;
-            border: 3px solid transparent;
-            border-top-color: var(--primary);
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
         }
 
-        .loading-spinner::before {
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
+        .code-block:hover .copy-btn { opacity: 1; }
+        .copy-btn:hover { background: rgba(255,255,255,0.2); }
+
+        .manual-setup {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
         }
 
-        .loading-spinner::after {
-            width: 45px;
-            height: 45px;
-            top: 7.5px;
-            left: 7.5px;
-            border-top-color: var(--secondary);
-            animation: spin 0.7s linear infinite reverse;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 15px;
-        }
-
-        .loading-subtext {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        .loading-dots::after {
-            content: '';
-            animation: dots 1.5s steps(4, end) infinite;
-        }
-
-        @keyframes dots {
-            0%, 20% { content: ''; }
-            40% { content: '.'; }
-            60% { content: '..'; }
-            80%, 100% { content: '...'; }
-        }
-
-        .error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #fca5a5;
-            padding: 20px;
+        details {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
             border-radius: 12px;
-            margin: 20px 0;
+            margin-bottom: 1rem;
         }
 
-        .hidden {
-            display: none;
+        summary {
+            padding: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            list-style: none;
         }
 
-        .section-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
+        details[open] summary {
+            border-bottom: 1px solid var(--border);
         }
 
-        .section-title::before {
-            content: '';
-            width: 4px;
-            height: 30px;
-            background: var(--primary);
-            border-radius: 2px;
+        .details-content {
+            padding: 1rem;
         }
 
-        @media (max-width: 768px) {
-            .hero {
-                padding: 60px 20px 100px;
-            }
-
-            .hero h1 {
-                font-size: 2.5rem;
-            }
-
-            .stats {
-                grid-template-columns: 1fr;
-            }
-
-            .filter-group {
-                flex-direction: column;
-            }
-
-            .filter-btn {
-                width: 100%;
-            }
-
-            .package-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
+        footer {
+            text-align: center;
+            margin-top: 6rem;
+            color: var(--muted);
+            font-size: 0.875rem;
         }
+
+        footer a {
+            color: var(--fg);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        footer a:hover { color: var(--accent); }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #111827;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 50;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); }
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div class="loading-screen" id="loading-screen">
-        <div class="loading-logo">
-            <i class="fa-brands fa-chrome"></i>
-        </div>
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Loading Helium Browser Repository<span class="loading-dots"></span></div>
-        <div class="loading-subtext">Fetching latest package information</div>
-    </div>
 
-    <div class="hero">
-        <div class="container">
-            <div class="hero-content">
-                <div class="badge">
-                    <i class="fa-solid fa-rocket"></i>
-                    <span>Automated Package Repository</span>
+<div class="container">
+    <header>
+        <div class="logo">He</div>
+        <h1>Helium Browser</h1>
+        <p class="subtitle">Greita, saugi ir privatumą gerbianti naršyklė Linux vartotojams.</p>
+        <div id="version-container" class="version-badge" style="display: none;">
+            <span id="latest-version">...</span>
+        </div>
+    </header>
+
+    <section>
+        <h2>⚡ Greitas diegimas</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>Ubuntu / Debian</h3>
+                <p>Skirta Ubuntu, Debian, Linux Mint ir kt.</p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyText(this)">Kopijuoti</button>
+                    <pre>curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install.sh | bash</pre>
                 </div>
-                <h1><i class="fa-brands fa-chrome"></i> Helium Browser</h1>
-                <p>Modern, fast and reliable browser repository for Linux platforms</p>
+            </div>
+            <div class="card">
+                <h3>Fedora / RPM</h3>
+                <p>Skirta Fedora, RHEL, CentOS, Rocky.</p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyText(this)">Kopijuoti</button>
+                    <pre>curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash</pre>
+                </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div class="container stats-wrapper">
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fa-solid fa-box-open"></i></div>
-                <div class="stat-label">Latest Version</div>
-                <div class="stat-value" id="latest-version">—</div>
+    <section class="manual-setup">
+        <h2>🛠 Rankinis konfigūravimas</h2>
+        <details>
+            <summary>APT repozitorija (Debian/Ubuntu)</summary>
+            <div class="details-content">
+                <p style="margin-bottom: 1rem; font-size: 0.875rem; color: var(--muted);">Pridėkite repozitoriją prie savo sistemos rankiniu būdu:</p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyText(this)">Kopijuoti</button>
+                    <pre>echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/helium-browser-deb/apt stable main" | sudo tee /etc/apt/sources.list.d/helium-browser.list
+sudo apt update
+sudo apt install helium-browser</pre>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
-                <div class="stat-label">Last Updated</div>
-                <div class="stat-value" id="last-updated">—</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fa-solid fa-layer-group"></i></div>
-                <div class="stat-label">Available Packages</div>
-                <div class="stat-value" id="package-count">—</div>
-            </div>
-        </div>
+        </details>
 
-        <div class="filter-section">
-            <div class="filter-label"><i class="fa-solid fa-filter"></i> Filter by Operating System:</div>
-            <div class="filter-group">
-                <button class="filter-btn active" data-os="all">All</button>
-                <button class="filter-btn" data-os="ubuntu">Ubuntu</button>
-                <button class="filter-btn" data-os="debian">Debian</button>
-                <button class="filter-btn" data-os="fedora">Fedora</button>
-                <button class="filter-btn" data-os="rhel">RHEL</button>
-                <button class="filter-btn" data-os="opensuse">openSUSE</button>
-            </div>
-        </div>
-
-        <div id="loading" class="loading">Loading package information...</div>
-        <div id="error" class="error hidden"></div>
-        <div id="packages" class="package-grid"></div>
-    </div>
-
-    <script>
-        const REPO_OWNER = 'arvaidasre';
-        const REPO_NAME = 'helium-browser-deb';
-        const GITHUB_API = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`;
-        
-        let allPackages = [];
-
-        const osMap = {
-            'ubuntu': { type: 'apt', name: 'Ubuntu', arch: ['amd64', 'arm64'], icon: '🟠' },
-            'debian': { type: 'apt', name: 'Debian', arch: ['amd64', 'arm64'], icon: '🔴' },
-            'fedora': { type: 'rpm', name: 'Fedora', arch: ['x86_64', 'aarch64'], icon: '🔵' },
-            'rhel': { type: 'rpm', name: 'RHEL', arch: ['x86_64', 'aarch64'], icon: '🔴' },
-            'opensuse': { type: 'rpm', name: 'openSUSE', arch: ['x86_64', 'aarch64'], icon: '🟢' }
-        };
-
-        async function fetchReleases() {
-            const response = await fetch(`${GITHUB_API}/releases/latest`);
-            if (!response.ok) throw new Error('Failed to fetch releases');
-            return await response.json();
-        }
-
-        function parsePackages(release) {
-            if (!release?.assets) return [];
-            
-            const packages = [];
-            release.assets.forEach(asset => {
-                const name = asset.name;
-                let type, arch;
-
-                if (name.endsWith('.deb')) {
-                    type = 'apt';
-                    arch = name.includes('amd64') ? 'amd64' : name.includes('arm64') ? 'arm64' : null;
-                    
-                    if (arch) {
-                        packages.push({
-                            name: 'helium-browser',
-                            version: release.tag_name.replace(/^v/, ''),
-                            type: 'apt',
-                            arch,
-                            os: ['ubuntu', 'debian'],
-                            filename: name,
-                            size: asset.size,
-                            downloadUrl: asset.browser_download_url,
-                            releaseDate: new Date(release.published_at)
-                        });
-                    }
-                } else if (name.endsWith('.rpm')) {
-                    type = 'rpm';
-                    arch = name.includes('x86_64') ? 'x86_64' : name.includes('aarch64') ? 'aarch64' : null;
-                    
-                    if (arch) {
-                        packages.push({
-                            name: 'helium-browser',
-                            version: release.tag_name.replace(/^v/, ''),
-                            type: 'rpm',
-                            arch,
-                            os: ['fedora', 'rhel', 'opensuse'],
-                            filename: name,
-                            size: asset.size,
-                            downloadUrl: asset.browser_download_url,
-                            releaseDate: new Date(release.published_at)
-                        });
-                    }
-                }
-            });
-
-            return packages;
-        }
-
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        }
-
-        function formatDate(date) {
-            if (!date) return 'Unknown';
-            return new Date(date).toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        }
-
-        function getInstallCommand(pkg) {
-            if (pkg.type === 'apt') {
-                return `echo "deb [arch=${pkg.arch} trusted=yes] https://arvaidasre.github.io/helium-browser-deb/apt stable main" | sudo tee /etc/apt/sources.list.d/helium.list
-sudo apt-get update
-sudo apt-get install helium-browser`;
-            } else {
-                return `sudo tee /etc/yum.repos.d/helium.repo << 'EOF'
+        <details>
+            <summary>RPM repozitorija (Fedora/RHEL)</summary>
+            <div class="details-content">
+                <p style="margin-bottom: 1rem; font-size: 0.875rem; color: var(--muted);">Sukurkite repozitorijos failą:</p>
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyText(this)">Kopijuoti</button>
+                    <pre>sudo tee /etc/yum.repos.d/helium.repo << 'EOF'
 [helium]
-name=Helium Browser Repository
-baseurl=https://arvaidasre.github.io/helium-browser-deb/rpm/\\$basearch
+name=Helium Browser
+baseurl=https://arvaidasre.github.io/helium-browser-deb/rpm/$basearch
 enabled=1
 gpgcheck=0
 EOF
+sudo dnf install helium-browser</pre>
+                </div>
+            </div>
+        </details>
+    </section>
 
-sudo dnf install helium-browser`;
+    <footer>
+        <p>Projektas prižiūrimas <a href="https://github.com/arvaidasre/helium-browser-deb" target="_blank">GitHub</a></p>
+        <p style="margin-top: 0.5rem; opacity: 0.7;">&copy; 2025 Arvaidas Rekis. Upstream: <a href="https://github.com/imputnet/helium-linux" target="_blank">Helium Linux</a></p>
+    </footer>
+</div>
+
+<div id="toast" class="toast">Nukopijuota!</div>
+
+<script>
+    async function loadVersion() {
+        try {
+            const res = await fetch('https://api.github.com/repos/arvaidasre/helium-browser-deb/releases/latest');
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('latest-version').textContent = 'Naujausia versija: ' + data.tag_name;
+                document.getElementById('version-container').style.display = 'inline-flex';
             }
-        }
+        } catch (e) {}
+    }
 
-        function renderPackages(packages) {
-            const container = document.getElementById('packages');
-            container.innerHTML = '';
+    function copyText(btn) {
+        const pre = btn.nextElementSibling;
+        const text = pre.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+            
+            const originalText = btn.textContent;
+            btn.textContent = '✓';
+            setTimeout(() => btn.textContent = originalText, 2000);
+        });
+    }
 
-            if (packages.length === 0) {
-                container.innerHTML = '<div class="loading">No packages found for selected filter.</div>';
-                return;
-            }
+    loadVersion();
+</script>
 
-            const grouped = {};
-            packages.forEach(pkg => {
-                const key = `${pkg.type}-${pkg.arch}`;
-                if (!grouped[key]) {
-                    grouped[key] = { type: pkg.type, arch: pkg.arch, os: pkg.os, packages: [] };
-                }
-                grouped[key].packages.push(pkg);
-            });
-
-            Object.values(grouped).forEach(group => {
-                const osNames = group.os.map(o => osMap[o].name).join(', ');
-                const typeIcon = group.type === 'apt' ? '<i class="fa-solid fa-box"></i>' : '<i class="fa-solid fa-cube"></i>';
-                const typeName = group.type === 'apt' ? 'APT' : 'RPM';
-                
-                group.packages.forEach(pkg => {
-                    const card = document.createElement('div');
-                    card.className = 'package-card';
-                    card.innerHTML = `
-                        <div class="package-header">
-                            <div class="package-title">
-                                <div class="minimalist-icon">${typeIcon}</div>
-                                <div>
-                                    <div class="package-name">${pkg.name}</div>
-                                    <div style="color: var(--text-secondary); font-size: 0.9rem;">${typeName} • ${osNames}</div>
-                                </div>
-                            </div>
-                            <div class="package-version">v${pkg.version}</div>
-                        </div>
-                        
-                        <div class="package-meta">
-                            <div class="meta-item">
-                                <div class="meta-label">Architecture</div>
-                                <div class="meta-value">${pkg.arch.toUpperCase()}</div>
-                            </div>
-                            <div class="meta-item">
-                                <div class="meta-label">Size</div>
-                                <div class="meta-value">${formatBytes(pkg.size)}</div>
-                            </div>
-                            <div class="meta-item">
-                                <div class="meta-label">Date</div>
-                                <div class="meta-value">${formatDate(pkg.releaseDate)}</div>
-                            </div>
-                            <div class="meta-item">
-                                <div class="meta-label">Download</div>
-                                <div class="meta-value"><a href="${pkg.downloadUrl}" target="_blank">↓ ${pkg.filename}</a></div>
-                            </div>
-                        </div>
-                        
-                        <div class="install-section">
-                            <div class="install-header">
-                                <div class="install-title">Installation Commands</div>
-                                <button class="copy-btn" onclick="copyToClipboard(this)">Copy</button>
-                            </div>
-                            <div class="install-code">
-                                <pre>${getInstallCommand(pkg)}</pre>
-                            </div>
-                        </div>
-                    `;
-                    container.appendChild(card);
-                });
-            });
-        }
-
-        function filterPackages(os) {
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.os === os);
-            });
-
-            const filtered = os === 'all' ? allPackages : allPackages.filter(pkg => pkg.os.includes(os));
-            renderPackages(filtered);
-            document.getElementById('package-count').textContent = filtered.length;
-        }
-
-        function copyToClipboard(btn) {
-            const code = btn.closest('.install-section').querySelector('pre').textContent.trim();
-            navigator.clipboard.writeText(code).then(() => {
-                const original = btn.textContent;
-                btn.textContent = '✓ Copied!';
-                setTimeout(() => btn.textContent = original, 2000);
-            });
-        }
-
-        async function init() {
-            try {
-                const release = await fetchReleases();
-                allPackages = parsePackages(release);
-                
-                document.getElementById('latest-version').textContent = release.tag_name.replace(/^v/, '');
-                document.getElementById('last-updated').textContent = formatDate(release.published_at);
-                document.getElementById('package-count').textContent = allPackages.length;
-                
-                renderPackages(allPackages);
-                document.getElementById('loading').classList.add('hidden');
-                
-                document.querySelectorAll('.filter-btn').forEach(btn => {
-                    btn.addEventListener('click', () => filterPackages(btn.dataset.os));
-                });
-
-                // Hide loading screen with delay for smooth transition
-                setTimeout(() => {
-                    document.getElementById('loading-screen').classList.add('hidden');
-                }, 500);
-            } catch (error) {
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('error').classList.remove('hidden');
-                document.getElementById('error').textContent = `Error: ${error.message}`;
-                
-                // Hide loading screen even on error
-                setTimeout(() => {
-                    document.getElementById('loading-screen').classList.add('hidden');
-                }, 500);
-            }
-        }
-
-        init();
-    </script>
 </body>
 </html>
