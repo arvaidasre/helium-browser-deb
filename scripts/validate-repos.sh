@@ -68,7 +68,7 @@ for dist in noble jammy focal bookworm bullseye; do
 done
 
 # Count packages
-local apt_pkg_count=$(ls -1 "$APT_DIR/pool/main"/*.deb 2>/dev/null | wc -l || echo "0")
+apt_pkg_count=$(ls -1 "$APT_DIR/pool/main"/*.deb 2>/dev/null | wc -l || echo "0")
 log "APT packages in pool: $apt_pkg_count"
 
 # Check RPM repository
@@ -84,8 +84,8 @@ require_grep "$RPM_DIR/x86_64/repodata/repomd.xml" '<repomd'
 require_grep "$RPM_DIR/aarch64/repodata/repomd.xml" '<repomd'
 
 # Count packages
-local rpm_x86_count=$(ls -1 "$RPM_DIR/x86_64"/*.rpm 2>/dev/null | wc -l || echo "0")
-local rpm_arm_count=$(ls -1 "$RPM_DIR/aarch64"/*.rpm 2>/dev/null | wc -l || echo "0")
+rpm_x86_count=$(ls -1 "$RPM_DIR/x86_64"/*.rpm 2>/dev/null | wc -l || echo "0")
+rpm_arm_count=$(ls -1 "$RPM_DIR/aarch64"/*.rpm 2>/dev/null | wc -l || echo "0")
 log "RPM packages x86_64: $rpm_x86_count"
 log "RPM packages aarch64: $rpm_arm_count"
 
