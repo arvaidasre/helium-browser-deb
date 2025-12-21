@@ -63,10 +63,10 @@ jobs:
             git add .
             git commit -m "chore: sync upstream releases and update packages
 
-- Synced all upstream releases from imputnet/helium-linux
-- Built latest DEB and RPM packages
-- Updated APT and RPM repositories
-- Generated release notes and manifests"
+            - Synced all upstream releases from imputnet/helium-linux
+            - Built latest DEB and RPM packages
+            - Updated APT and RPM repositories
+            - Generated release notes and manifests"
             git push origin main
           else
             echo "No changes to commit"
