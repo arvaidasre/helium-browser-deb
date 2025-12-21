@@ -21,7 +21,7 @@ jobs:
       - name: Install deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y jq dpkg-dev curl apt-utils ruby ruby-dev build-essential rpm dpkg-scanpackages createrepo-c
+          sudo apt-get install -y jq dpkg-dev curl apt-utils ruby ruby-dev build-essential rpm createrepo-c
           sudo gem install fpm
 
       - name: Build packages
