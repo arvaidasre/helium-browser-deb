@@ -30,11 +30,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             dpkg-dev \
-            fpm \
             ruby-dev \
             createrepo-c \
             curl \
-            jq
+            jq \
+            build-essential
+          
+          # Install FPM from gem
+          sudo gem install fpm --no-document
 
       - name: Configure git
         run: |
