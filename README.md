@@ -108,11 +108,4 @@ curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
 This repository automatically syncs with the upstream [imputnet/helium-linux](https://github.com/imputnet/helium-linux) repository:
 
 
-### Synced Releases
-
-View all synced releases:
-
-- **Index**: [releases/INDEX.md](releases/INDEX.md)
-- **Changelog**: [releases/CHANGELOG.md](releases/CHANGELOG.md)
-
 &copy; 2025 Arvaidas Rekis.
