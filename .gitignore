@@ -2,3 +2,33 @@ dist/
 apt-repo/
 gh-pages/
 .serena
+
+# Build and sync artifacts
+sync/
+*.tar.gz
+*.tar.xz
+*.tar.bz2
+*.tar.zst
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Backups
+.backups/
+
+# Local environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+Thumbs.db
+.directory

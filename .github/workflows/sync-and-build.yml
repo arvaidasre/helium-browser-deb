@@ -1,0 +1,101 @@
+name: Sync Upstream & Build Packages
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/build.sh'
+      - 'scripts/build-prerelease.sh'
+
+jobs:
+  sync-and-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            dpkg-dev \
+            fpm \
+            ruby-dev \
+            createrepo-c \
+            curl \
+            jq
+
+      - name: Configure git
+        run: |
+          git config user.name "Release Bot"
+          git config user.email "noreply@github.com"
+
+      - name: Sync upstream releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/sync-upstream.sh
+
+      - name: Build packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/build.sh
+
+      - name: Publish to repositories
+        run: bash scripts/publish-release.sh
+
+      - name: Validate repositories
+        run: bash scripts/validate-repos.sh
+
+      - name: Commit and push changes
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git add .
+            git commit -m "chore: sync upstream releases and update packages
+
+- Synced all upstream releases from imputnet/helium-linux
+- Built latest DEB and RPM packages
+- Updated APT and RPM repositories
+- Generated release notes and manifests"
+            git push origin main
+          else
+            echo "No changes to commit"
+          fi
+
+      - name: Push git tags
+        run: |
+          git push origin --tags || true
+
+      - name: Create release summary
+        if: always()
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Synced Releases" >> $GITHUB_STEP_SUMMARY
+          if [[ -f releases/INDEX.md ]]; then
+            echo "✓ Releases synced from upstream" >> $GITHUB_STEP_SUMMARY
+            echo "- See [releases/INDEX.md](releases/INDEX.md) for details" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Built Packages" >> $GITHUB_STEP_SUMMARY
+          if [[ -d dist ]]; then
+            echo "✓ Packages built:" >> $GITHUB_STEP_SUMMARY
+            ls -1 dist/*.{deb,rpm} 2>/dev/null | sed 's/^/- /' >> $GITHUB_STEP_SUMMARY || true
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Repository Status" >> $GITHUB_STEP_SUMMARY
+          if [[ -f repo/MANIFEST.txt ]]; then
+            echo "✓ Repositories updated" >> $GITHUB_STEP_SUMMARY
+            echo "- See [repo/MANIFEST.txt](repo/MANIFEST.txt) for details" >> $GITHUB_STEP_SUMMARY
+          fi
+
