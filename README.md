@@ -107,28 +107,6 @@ curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
 
 This repository automatically syncs with the upstream [imputnet/helium-linux](https://github.com/imputnet/helium-linux) repository:
 
-- **Automatic Sync**: All upstream releases are fetched with their metadata and release notes
-- **Release Notes**: Complete changelog available in `releases/CHANGELOG.md`
-- **Git Tags**: Local tags created for each upstream release
-- **Package Building**: Automated DEB and RPM package creation
-- **Repository Updates**: Continuous APT and RPM repository maintenance
-
-### Release Process
-
-For detailed information about the release process, see [RELEASE_PROCESS.md](RELEASE_PROCESS.md).
-
-Quick commands:
-
-```bash
-# Full sync and build pipeline
-bash scripts/full-sync-and-build.sh
-
-# Individual steps
-bash scripts/sync-upstream.sh      # Sync upstream releases
-bash scripts/build.sh              # Build packages
-bash scripts/publish-release.sh    # Publish to repositories
-bash scripts/validate-repos.sh     # Validate repositories
-```
 
 ### Synced Releases
 
