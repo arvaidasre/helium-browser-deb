@@ -4,40 +4,73 @@
 
 set -euo pipefail
 
-# Colors for output
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+BLUE='\033[0;34m'
+NC='\033[0m'
 
-# Function to print colored output
-print_status() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
+log() { echo -e "${GREEN}[INFO]${NC} $1"; }
+warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+error() { echo -e "${RED}[ERROR]${NC} $1" >&2; exit 1; }
 
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
+# Check if running as root
+if [[ $EUID -eq 0 ]]; then
+    SUDO=""
+else
+    SUDO="sudo"
+fi
 
 # Detect architecture
-ARCH=$(dpkg --print-architecture)
-print_status "Detected architecture: $ARCH"
+ARCH=$(dpkg --print-architecture 2>/dev/null || echo "amd64")
+log "Detected architecture: $ARCH"
+
+# Check if apt is available
+if ! command -v apt-get >/dev/null 2>&1; then
+    error "apt-get not found. This script is for Debian/Ubuntu systems only."
+fi
+
+# Repository URL
+REPO_URL="https://arvaidasre.github.io/helium-browser-deb/apt"
+LIST_FILE="/etc/apt/sources.list.d/helium-browser.list"
+
+# Check if already installed
+if dpkg -l | grep -q "^ii.*helium-browser"; then
+    CURRENT_VERSION=$(dpkg -l | grep helium-browser | awk '{print $3}')
+    log "Helium Browser is already installed (version: $CURRENT_VERSION)"
+    log "Updating to latest version..."
+else
+    log "Installing Helium Browser..."
+fi
+
+# Remove old repository entry if exists (for clean reinstall)
+if [[ -f "$LIST_FILE" ]]; then
+    log "Removing old repository configuration..."
+    $SUDO rm -f "$LIST_FILE"
+fi
 
 # Add repository
-print_status "Adding Helium Browser repository..."
-echo "deb [arch=$ARCH] https://arvaidasre.github.io/helium-browser-deb/apt stable main" | sudo tee /etc/apt/sources.list.d/helium-browser.list
+log "Adding Helium Browser repository..."
+echo "deb [arch=$ARCH trusted=yes] $REPO_URL stable main" | $SUDO tee "$LIST_FILE" > /dev/null
 
 # Update package list
-print_status "Updating package list..."
-sudo apt-get update
+log "Updating package list..."
+$SUDO apt-get update -qq
 
 # Install Helium Browser
-print_status "Installing Helium Browser..."
-sudo apt-get install -y helium-browser
+log "Installing helium-browser package..."
+$SUDO apt-get install -y helium-browser
 
-print_status "Helium Browser has been successfully installed!"
-print_status "Launch Helium Browser from your applications menu or run 'helium' in terminal."
+# Verify installation
+if command -v helium >/dev/null 2>&1; then
+    log "Helium Browser has been successfully installed!"
+    echo ""
+    echo -e "${BLUE}Launch Helium Browser:${NC}"
+    echo "  - From applications menu, or"
+    echo "  - Run 'helium' in terminal"
+    echo ""
+else
+    warn "Installation completed but 'helium' command not found in PATH."
+    warn "Try launching from /usr/bin/helium or restart your terminal."
+fi

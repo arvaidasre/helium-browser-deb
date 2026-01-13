@@ -1,7 +1,7 @@
 # <img src="https://avatars.githubusercontent.com/u/234597297?v=4" width="32" height="32"> Helium Browser Linux Repository
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Status-Automated-success?style=for-the-badge&logo=github-actions&logoColor=white" alt="Status">
+  <img src="https://img.shields.io/badge/Status-Fully_Automated-success?style=for-the-badge&logo=github-actions&logoColor=white" alt="Status">
   <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License">
   <img src="https://img.shields.io/badge/Platform-Linux-lightgrey?style=for-the-badge&logo=linux&logoColor=white" alt="Platform">
 </p>
@@ -13,13 +13,13 @@
 </p>
 
 <p align="center">
-  <i>Click on your language to see instructions / Pasirinkite kalbą instrukcijoms / Выберите язык для инструкций</i>
+  <i>Click on your language to see instructions / Pasirinkite kalba instrukcijoms / Выберите язык для инструкций</i>
 </p>
 
 ---
 
 <details>
-<summary><b>🇺🇸 English - Click to expand</b></summary>
+<summary><b>English - Click to expand</b></summary>
 <br>
 
 This repository provides automated, up-to-date packages of [Helium Browser](https://github.com/imputnet/helium-linux).
@@ -44,10 +44,10 @@ Visit our **[Web Page](https://arvaidasre.github.io/helium-browser-deb/)** for d
 ---
 
 <details>
-<summary><b>🇱🇹 Lietuvių - Išskleisti instrukcijas</b></summary>
+<summary><b>Lietuviu - Iskleisti instrukcijas</b></summary>
 <br>
 
-Ši repozitorija pateikia automatiškai paruoštus [Helium Browser](https://github.com/imputnet/helium-linux) paketus.
+Si repozitorija pateikia automatiskai paruostus [Helium Browser](https://github.com/imputnet/helium-linux) paketus.
 
 ### <img src="https://img.shields.io/badge/Greitas_Diegimas-2563eb?style=flat-square&logo=rocket&logoColor=white" height="24">
 
@@ -62,14 +62,14 @@ curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
 ```
 
 ### <img src="https://img.shields.io/badge/Rankinis_Nustatymas-6b7280?style=flat-square&logo=gear&logoColor=white" height="24">
-Apsilankykite **[interneto svetainėje](https://arvaidasre.github.io/helium-browser-deb/)** arba atsisiųskite failus iš [Releases skilties](../../releases).
+Apsilankykite **[interneto svetaineje](https://arvaidasre.github.io/helium-browser-deb/)** arba atsisiuskite failus is [Releases skilties](../../releases).
 
 </details>
 
 ---
 
 <details>
-<summary><b>🇷🇺 Русский - Показать инструкции</b></summary>
+<summary><b>Русский - Показать инструкции</b></summary>
 <br>
 
 Этот репозиторий предоставляет актуальные пакеты [Helium Browser](https://github.com/imputnet/helium-linux).
@@ -93,19 +93,40 @@ curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
 
 ---
 
-## 🛠️ Project Info
+## Automation System
+
+This repository is **fully automated**. No manual intervention required.
+
+### How It Works
+
+| Workflow | Schedule | Purpose |
+|----------|----------|---------|
+| **Auto Build** | Every 3 hours | Checks upstream for new releases, builds packages, creates GitHub release, deploys to Pages |
+| **Healthcheck** | Every hour | Monitors repository endpoints, triggers rebuild if broken |
+| **Cleanup** | Weekly (Sunday) | Removes old releases, keeps last 5 stable |
+
+### Automation Flow
+
+```
+Upstream Release  -->  Auto-detect  -->  Build DEB/RPM  -->  GitHub Release  -->  Deploy Repos
+       ^                                                                              |
+       |                                                                              v
+   [3h cycle]                                                              GitHub Pages (APT/RPM)
+                                                                                      |
+                                                                                      v
+                                           [1h cycle]  <--  Healthcheck  <--  User Downloads
+```
+
+## Project Info
 
 | System | Status |
 | :--- | :--- |
-| **Build Pipeline** | [![Build Status](https://github.com/arvaidasre/helium-browser-deb/workflows/Build%20DEB%20and%20RPM%20from%20upstream%20Tarball/badge.svg)](https://github.com/arvaidasre/helium-browser-deb/actions) |
-| **Repo Maintenance** | [![Update Repos](https://github.com/arvaidasre/helium-browser-deb/workflows/Update%20APT%20and%20RPM%20Repositories/badge.svg)](https://github.com/arvaidasre/helium-browser-deb/actions) |
+| **Auto Build** | [![Build](https://github.com/arvaidasre/helium-browser-deb/actions/workflows/auto-build.yml/badge.svg)](https://github.com/arvaidasre/helium-browser-deb/actions/workflows/auto-build.yml) |
+| **Healthcheck** | [![Health](https://github.com/arvaidasre/helium-browser-deb/actions/workflows/healthcheck.yml/badge.svg)](https://github.com/arvaidasre/helium-browser-deb/actions/workflows/healthcheck.yml) |
 
 - **Automation**: ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white)
 - **Upstream**: [imputnet/helium-linux](https://github.com/imputnet/helium-linux)
 
-## 📦 Release Management
-
-This repository automatically syncs with the upstream [imputnet/helium-linux](https://github.com/imputnet/helium-linux) repository:
-
+---
 
 &copy; 2025 Arvaidas Rekis.

@@ -70,12 +70,11 @@ if [[ -n "${GITHUB_TOKEN:-}" && -n "${GITHUB_REPOSITORY:-}" ]]; then
     SKIPPED="1"
   fi
 
-  # Also check creation date of upstream release - don't build very old stuff
+  # Check creation date of upstream release - don't build releases older than 2025-01-01
   UPSTREAM_CREATED_AT="$(jq -r '.created_at' <<<"$JSON")"
   log "Upstream release created at: $UPSTREAM_CREATED_AT"
-  # If it's older than 2025-12-01, it's definitely "old" for this repo
-  if [[ "$UPSTREAM_CREATED_AT" < "2025-12-01" ]]; then
-    log "Upstream release is too old (pre-dating repo work). Skipping."
+  if [[ "$UPSTREAM_CREATED_AT" < "2025-01-01" ]]; then
+    log "Upstream release is too old (pre-2025). Skipping."
     SKIPPED="1"
   fi
 fi
