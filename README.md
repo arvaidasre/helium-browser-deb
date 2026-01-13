@@ -105,17 +105,7 @@ This repository is **fully automated**. No manual intervention required.
 | **Healthcheck** | Every hour | Monitors repository endpoints, triggers rebuild if broken |
 | **Cleanup** | Weekly (Sunday) | Removes old releases, keeps last 5 stable |
 
-### Automation Flow
 
-```
-Upstream Release  -->  Auto-detect  -->  Build DEB/RPM  -->  GitHub Release  -->  Deploy Repos
-       ^                                                                              |
-       |                                                                              v
-   [3h cycle]                                                              GitHub Pages (APT/RPM)
-                                                                                      |
-                                                                                      v
-                                           [1h cycle]  <--  Healthcheck  <--  User Downloads
-```
 
 ## Project Info
 
