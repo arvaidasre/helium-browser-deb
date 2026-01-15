@@ -60,9 +60,16 @@ jobs:
           check_url "$BASE/rpm/x86_64/repodata/repomd.xml" || FAIL=1
           check_url "$BASE/rpm/aarch64/repodata/repomd.xml" || FAIL=1
           
-          # Install scripts
-          check_url "$BASE/install.sh" || check_url "$BASE/apt/install.sh" || FAIL=1
-          check_url "$BASE/install-rpm.sh" || check_url "$BASE/rpm/install-rpm.sh" || FAIL=1
+          # Install scripts (check both locations, pass if either exists)
+          APT_INSTALL_OK=0
+          check_url "$BASE/install.sh" && APT_INSTALL_OK=1
+          check_url "$BASE/apt/install.sh" && APT_INSTALL_OK=1
+          [[ "$APT_INSTALL_OK" == "0" ]] && FAIL=1
+          
+          RPM_INSTALL_OK=0
+          check_url "$BASE/install-rpm.sh" && RPM_INSTALL_OK=1
+          check_url "$BASE/rpm/install-rpm.sh" && RPM_INSTALL_OK=1
+          [[ "$RPM_INSTALL_OK" == "0" ]] && FAIL=1
 
           if [[ "$FAIL" == "0" ]]; then
             echo "All healthchecks passed"
