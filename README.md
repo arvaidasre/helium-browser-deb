@@ -39,6 +39,12 @@ curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
 ### <img src="https://img.shields.io/badge/Manual_Setup-6b7280?style=flat-square&logo=gear&logoColor=white" height="24">
 Visit our **[Web Page](https://arvaidasre.github.io/helium-browser-deb/)** for detailed instructions or download files from [Releases](../../releases).
 
+### Repository Layout
+
+- `tools/`: build + publish scripts
+- `site/`: public web assets and install scripts
+- `site/public/`: generated APT/RPM repo + Pages artifacts (generated in CI)
+
 </details>
 
 ---
@@ -64,6 +70,12 @@ curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
 ### <img src="https://img.shields.io/badge/Rankinis_Nustatymas-6b7280?style=flat-square&logo=gear&logoColor=white" height="24">
 Apsilankykite **[interneto svetaineje](https://arvaidasre.github.io/helium-browser-deb/)** arba atsisiuskite failus is [Releases skilties](../../releases).
 
+### Repo struktura
+
+- `tools/`: build + publish skriptai
+- `site/`: public assets ir install skriptai
+- `site/public/`: generuojamas APT/RPM repo (CI)
+
 </details>
 
 ---
@@ -88,6 +100,12 @@ curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
 
 ### <img src="https://img.shields.io/badge/Ручная_Настройка-6b7280?style=flat-square&logo=gear&logoColor=white" height="24">
 Посетите нашу **[веб-страницу](https://arvaidasre.github.io/helium-browser-deb/)** или скачайте файлы из [раздела релизов](../../releases).
+
+### Структура репозитория
+
+- `tools/`: scripts for build + publish
+- `site/`: public assets and install scripts
+- `site/public/`: generated APT/RPM repo (CI)
 
 </details>
 

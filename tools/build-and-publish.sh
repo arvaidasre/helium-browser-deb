@@ -35,6 +35,6 @@ log "Build and publish pipeline completed successfully!"
 log ""
 log "Summary:"
 log "  - Packages built in: $PROJECT_ROOT/dist"
-log "  - Repositories updated in: $PROJECT_ROOT/repo"
-log "  - Manifest generated: $PROJECT_ROOT/repo/MANIFEST.txt"
+log "  - Repositories updated in: $PROJECT_ROOT/site/public"
+log "  - Manifest generated: $PROJECT_ROOT/site/public/MANIFEST.txt"
 

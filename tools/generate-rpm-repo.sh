@@ -4,7 +4,7 @@ set -euo pipefail
 # --- Configuration ---
 REPO_NAME="helium-browser"
 REPO_URL="https://arvaidasre.github.io/helium-browser-deb"
-REPO_DIR="${1:-repo/rpm}"
+REPO_DIR="${1:-site/public/rpm}"
 
 # --- Helper Functions ---
 log() { echo -e "\033[1;34m[RPM-REPO]\033[0m $*"; }
@@ -60,17 +60,10 @@ if [[ -n "$(ls -A x86_64/*.rpm 2>/dev/null)" ]]; then
   fi
 else
   log "No x86_64 packages found, creating empty repository metadata"
-  # Create minimal repodata structure
-  mkdir -p x86_64/repodata
-  cat > x86_64/repodata/repomd.xml << 'REPOMD_EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<repomd xmlns="http://linux.duke.edu/metadata/repo" xmlns:rpm="http://linux.duke.edu/metadata/rpm">
-  <revision>0</revision>
-</repomd>
-REPOMD_EOF
+  err "No x86_64 RPM packages found in dist/. Aborting to avoid empty repo."
 fi
 
-# For aarch64 - always generate metadata, even if empty
+# For aarch64 - require packages
 if [[ -n "$(ls -A aarch64/*.rpm 2>/dev/null)" ]]; then
   log "Generating repository metadata for aarch64..."
   if command -v createrepo_c >/dev/null 2>&1; then
@@ -79,15 +72,7 @@ if [[ -n "$(ls -A aarch64/*.rpm 2>/dev/null)" ]]; then
     createrepo --update aarch64 || createrepo aarch64
   fi
 else
-  log "No aarch64 packages found, creating empty repository metadata"
-  # Create minimal repodata structure
-  mkdir -p aarch64/repodata
-  cat > aarch64/repodata/repomd.xml << 'REPOMD_EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<repomd xmlns="http://linux.duke.edu/metadata/repo" xmlns:rpm="http://linux.duke.edu/metadata/rpm">
-  <revision>0</revision>
-</repomd>
-REPOMD_EOF
+  err "No aarch64 RPM packages found in dist/. Aborting to avoid empty repo."
 fi
 
 log "RPM repository generated successfully!"

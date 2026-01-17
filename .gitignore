@@ -1,0 +1,15 @@
+# Build artifacts
+/dist/
+
+# Generated repository output
+/site/public/
+
+# Sync cache and backups
+/sync/
+/.backups/
+
+# Upstream release sync output
+/releases/
+
+# Logs
+*.log

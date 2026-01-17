@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APT_DIR="${1:-repo/apt}"
-RPM_DIR="${2:-repo/rpm}"
+APT_DIR="${1:-site/public/apt}"
+RPM_DIR="${2:-site/public/rpm}"
+SITE_DIR="${3:-site/public}"
 
 # --- Helper Functions ---
 log() { echo -e "\033[1;34m[VALIDATE]\033[0m $*"; }
@@ -44,6 +45,14 @@ check_file_integrity() {
 log "Validating repositories..."
 log "APT repository: $APT_DIR"
 log "RPM repository: $RPM_DIR"
+log "Site root: $SITE_DIR"
+
+# Check site root files
+log ""
+log "Checking site root files..."
+require_file "$SITE_DIR/index.html"
+require_file "$SITE_DIR/install.sh"
+require_file "$SITE_DIR/install-rpm.sh"
 
 # Check APT repository
 log ""
@@ -70,6 +79,7 @@ done
 # Count packages
 apt_pkg_count=$(ls -1 "$APT_DIR/pool/main"/*.deb 2>/dev/null | wc -l || echo "0")
 log "APT packages in pool: $apt_pkg_count"
+[[ "$apt_pkg_count" -gt 0 ]] || err "No APT packages found."
 
 # Check RPM repository
 log ""
@@ -88,11 +98,13 @@ rpm_x86_count=$(ls -1 "$RPM_DIR/x86_64"/*.rpm 2>/dev/null | wc -l || echo "0")
 rpm_arm_count=$(ls -1 "$RPM_DIR/aarch64"/*.rpm 2>/dev/null | wc -l || echo "0")
 log "RPM packages x86_64: $rpm_x86_count"
 log "RPM packages aarch64: $rpm_arm_count"
+[[ "$rpm_x86_count" -gt 0 ]] || err "No RPM x86_64 packages found."
+[[ "$rpm_arm_count" -gt 0 ]] || err "No RPM aarch64 packages found."
 
 # Check manifest
 log ""
-if [[ -f "repo/MANIFEST.txt" ]]; then
-  log "Manifest file found: repo/MANIFEST.txt"
+if [[ -f "$SITE_DIR/MANIFEST.txt" ]]; then
+  log "Manifest file found: $SITE_DIR/MANIFEST.txt"
 else
   warn "Manifest file not found (optional)"
 fi

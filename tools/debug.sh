@@ -33,7 +33,7 @@ for cmd in curl jq git dpkg-scanpackages gzip createrepo_c fpm sha256sum; do
 done
 
 section "Directory Structure"
-for dir in dist repo releases .backups sync; do
+for dir in dist site/public releases .backups sync; do
   if [[ -d "$PROJECT_ROOT/$dir" ]]; then
     local size=$(du -sh "$PROJECT_ROOT/$dir" 2>/dev/null | cut -f1)
     log "✓ $dir/ ($size)"
@@ -43,33 +43,33 @@ for dir in dist repo releases .backups sync; do
 done
 
 section "APT Repository"
-if [[ -d "$PROJECT_ROOT/repo/apt" ]]; then
+if [[ -d "$PROJECT_ROOT/site/public/apt" ]]; then
   log "Structure:"
-  find "$PROJECT_ROOT/repo/apt" -type f | head -20 | sed 's/^/  /'
+  find "$PROJECT_ROOT/site/public/apt" -type f | head -20 | sed 's/^/  /'
   
   log ""
   log "Package count:"
-  local deb_count=$(ls -1 "$PROJECT_ROOT/repo/apt/pool/main"/*.deb 2>/dev/null | wc -l || echo "0")
+  local deb_count=$(ls -1 "$PROJECT_ROOT/site/public/apt/pool/main"/*.deb 2>/dev/null | wc -l || echo "0")
   log "  DEB packages: $deb_count"
   
-  if [[ -f "$PROJECT_ROOT/repo/apt/dists/stable/Release" ]]; then
+  if [[ -f "$PROJECT_ROOT/site/public/apt/dists/stable/Release" ]]; then
     log ""
     log "Release file:"
-    head -5 "$PROJECT_ROOT/repo/apt/dists/stable/Release" | sed 's/^/  /'
+    head -5 "$PROJECT_ROOT/site/public/apt/dists/stable/Release" | sed 's/^/  /'
   fi
 else
   log "APT repository not found"
 fi
 
 section "RPM Repository"
-if [[ -d "$PROJECT_ROOT/repo/rpm" ]]; then
+if [[ -d "$PROJECT_ROOT/site/public/rpm" ]]; then
   log "Structure:"
-  find "$PROJECT_ROOT/repo/rpm" -type f | head -20 | sed 's/^/  /'
+  find "$PROJECT_ROOT/site/public/rpm" -type f | head -20 | sed 's/^/  /'
   
   log ""
   log "Package count:"
-  local rpm_x86=$(ls -1 "$PROJECT_ROOT/repo/rpm/x86_64"/*.rpm 2>/dev/null | wc -l || echo "0")
-  local rpm_arm=$(ls -1 "$PROJECT_ROOT/repo/rpm/aarch64"/*.rpm 2>/dev/null | wc -l || echo "0")
+  local rpm_x86=$(ls -1 "$PROJECT_ROOT/site/public/rpm/x86_64"/*.rpm 2>/dev/null | wc -l || echo "0")
+  local rpm_arm=$(ls -1 "$PROJECT_ROOT/site/public/rpm/aarch64"/*.rpm 2>/dev/null | wc -l || echo "0")
   log "  x86_64 packages: $rpm_x86"
   log "  aarch64 packages: $rpm_arm"
 else
@@ -138,9 +138,9 @@ else
 fi
 
 section "Manifest"
-if [[ -f "$PROJECT_ROOT/repo/MANIFEST.txt" ]]; then
+if [[ -f "$PROJECT_ROOT/site/public/MANIFEST.txt" ]]; then
   log "✓ Manifest exists"
-  log "Last updated: $(stat -c %y "$PROJECT_ROOT/repo/MANIFEST.txt" 2>/dev/null | cut -d' ' -f1-2 || stat -f %Sm "$PROJECT_ROOT/repo/MANIFEST.txt" 2>/dev/null || echo "unknown")"
+  log "Last updated: $(stat -c %y "$PROJECT_ROOT/site/public/MANIFEST.txt" 2>/dev/null | cut -d' ' -f1-2 || stat -f %Sm "$PROJECT_ROOT/site/public/MANIFEST.txt" 2>/dev/null || echo "unknown")"
 else
   log "✗ Manifest not found"
 fi

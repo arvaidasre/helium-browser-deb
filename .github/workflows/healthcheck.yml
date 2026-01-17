@@ -46,6 +46,8 @@ jobs:
           
           # Core endpoints
           check_url "$BASE/index.html" || FAIL=1
+          check_url "$BASE/install.sh" || FAIL=1
+          check_url "$BASE/install-rpm.sh" || FAIL=1
           
           # APT repository
           check_url "$BASE/apt/dists/stable/Release" || FAIL=1
@@ -59,17 +61,6 @@ jobs:
           # RPM repository
           check_url "$BASE/rpm/x86_64/repodata/repomd.xml" || FAIL=1
           check_url "$BASE/rpm/aarch64/repodata/repomd.xml" || FAIL=1
-          
-          # Install scripts (check both locations, pass if either exists)
-          APT_INSTALL_OK=0
-          check_url "$BASE/install.sh" && APT_INSTALL_OK=1
-          check_url "$BASE/apt/install.sh" && APT_INSTALL_OK=1
-          [[ "$APT_INSTALL_OK" == "0" ]] && FAIL=1
-          
-          RPM_INSTALL_OK=0
-          check_url "$BASE/install-rpm.sh" && RPM_INSTALL_OK=1
-          check_url "$BASE/rpm/install-rpm.sh" && RPM_INSTALL_OK=1
-          [[ "$RPM_INSTALL_OK" == "0" ]] && FAIL=1
 
           if [[ "$FAIL" == "0" ]]; then
             echo "All healthchecks passed"

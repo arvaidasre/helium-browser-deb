@@ -122,8 +122,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ARCH_OVERRIDE: ${{ matrix.arch }}
         run: |
-          chmod +x scripts/*.sh
-          ./scripts/build.sh
+          chmod +x tools/*.sh
+          ./tools/build.sh
           
           if [[ -f "dist/meta.env" ]]; then
             source dist/meta.env
@@ -239,37 +239,10 @@ jobs:
             gh release download "$LATEST" --dir dist --pattern "*.deb" --pattern "*.rpm" || true
           fi
 
-      - name: Clean old repo data
+      - name: Build and publish repositories
         run: |
-          # Remove old packages and metadata
-          find repo -name "*.deb" -delete 2>/dev/null || true
-          find repo -name "*.rpm" -delete 2>/dev/null || true
-          rm -rf repo/apt/dists/* repo/apt/pool/* 2>/dev/null || true
-          rm -rf repo/rpm/*/repodata repo/rpm/*/*.rpm 2>/dev/null || true
-
-      - name: Generate APT repository
-        run: |
-          chmod +x scripts/*.sh
-          ./scripts/generate-apt-repo.sh repo/apt
-
-      - name: Generate RPM repository
-        run: |
-          ./scripts/generate-rpm-repo.sh repo/rpm
-
-      - name: Copy install scripts
-        run: |
-          cp repo/install.sh repo/apt/ 2>/dev/null || true
-          cp repo/install-rpm.sh repo/rpm/ 2>/dev/null || true
-
-      - name: Update index page
-        run: |
-          if [[ -f "scripts/index.html.template" ]]; then
-            cp -f scripts/index.html.template repo/index.html
-          fi
-
-      - name: Validate repositories
-        run: |
-          ./scripts/validate-repos.sh repo/apt repo/rpm
+          chmod +x tools/*.sh
+          ./tools/publish-release.sh
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -277,7 +250,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: repo
+          path: site/public
 
       - name: Deploy to GitHub Pages
         id: deployment

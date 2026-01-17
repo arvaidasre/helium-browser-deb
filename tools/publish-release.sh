@@ -4,16 +4,28 @@ set -euo pipefail
 # --- Configuration ---
 PACKAGE_NAME="helium-browser"
 DIST_DIR="${DIST_DIR:-dist}"
-REPO_DIR="${REPO_DIR:-repo}"
-APT_REPO_DIR="$REPO_DIR/apt"
-RPM_REPO_DIR="$REPO_DIR/rpm"
-BACKUP_DIR="${BACKUP_DIR:-.backups}"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_DIR="${REPO_DIR:-$PROJECT_ROOT/site/public}"
+STAGING_DIR="${STAGING_DIR:-$PROJECT_ROOT/site/public.tmp}"
+CURRENT_DIR="${CURRENT_DIR:-$PROJECT_ROOT/site/public.current}"
+APT_REPO_DIR="$STAGING_DIR/apt"
+RPM_REPO_DIR="$STAGING_DIR/rpm"
+BACKUP_DIR="${BACKUP_DIR:-$PROJECT_ROOT/.backups}"
 LOCK_FILE="/tmp/helium-publish.lock"
 
 # --- Helper Functions ---
 log() { echo -e "\033[1;34m[PUBLISH]\033[0m $*"; }
 err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
 warn() { echo -e "\033[1;33m[WARN]\033[0m $*"; }
+
+die_with_restore() {
+  warn "Publish failed - restoring previous repo state"
+  if [[ -d "$CURRENT_DIR" ]]; then
+    rm -rf "$REPO_DIR"
+    mv "$CURRENT_DIR" "$REPO_DIR"
+  fi
+  exit 1
+}
 
 check_deps() {
   local deps=(dpkg-scanpackages gzip createrepo_c sha256sum)
@@ -59,6 +71,22 @@ validate_packages() {
   if [[ $deb_count -eq 0 && $rpm_count -eq 0 ]]; then
     err "No packages found in $DIST_DIR"
   fi
+
+  if ! ls -A "$DIST_DIR"/*amd64*.deb >/dev/null 2>&1 && ! ls -A "$DIST_DIR"/*x86_64*.deb >/dev/null 2>&1; then
+    err "Missing amd64 .deb package in $DIST_DIR"
+  fi
+
+  if ! ls -A "$DIST_DIR"/*arm64*.deb >/dev/null 2>&1 && ! ls -A "$DIST_DIR"/*aarch64*.deb >/dev/null 2>&1; then
+    err "Missing arm64 .deb package in $DIST_DIR"
+  fi
+
+  if ! ls -A "$DIST_DIR"/*x86_64*.rpm >/dev/null 2>&1 && ! ls -A "$DIST_DIR"/*amd64*.rpm >/dev/null 2>&1; then
+    err "Missing x86_64 .rpm package in $DIST_DIR"
+  fi
+
+  if ! ls -A "$DIST_DIR"/*aarch64*.rpm >/dev/null 2>&1 && ! ls -A "$DIST_DIR"/*arm64*.rpm >/dev/null 2>&1; then
+    err "Missing aarch64 .rpm package in $DIST_DIR"
+  fi
   
   log "Found $deb_count DEB and $rpm_count RPM packages"
 }
@@ -70,12 +98,12 @@ backup_repos() {
   local timestamp=$(date +%Y%m%d_%H%M%S)
   local backup_name="repo_backup_${timestamp}"
   
-  if [[ -d "$APT_REPO_DIR" ]]; then
+  if [[ -d "$REPO_DIR/apt" ]]; then
     tar -czf "$BACKUP_DIR/${backup_name}_apt.tar.gz" -C "$REPO_DIR" apt 2>/dev/null || true
     log "APT backup: $BACKUP_DIR/${backup_name}_apt.tar.gz"
   fi
   
-  if [[ -d "$RPM_REPO_DIR" ]]; then
+  if [[ -d "$REPO_DIR/rpm" ]]; then
     tar -czf "$BACKUP_DIR/${backup_name}_rpm.tar.gz" -C "$REPO_DIR" rpm 2>/dev/null || true
     log "RPM backup: $BACKUP_DIR/${backup_name}_rpm.tar.gz"
   fi
@@ -113,11 +141,19 @@ publish_apt() {
   # Generate Packages files
   cd "$APT_REPO_DIR"
   
-  dpkg-scanpackages --arch amd64 pool/main > dists/stable/main/binary-amd64/Packages 2>/dev/null || true
-  gzip -k -f dists/stable/main/binary-amd64/Packages 2>/dev/null || true
+  if ls -A pool/main/*amd64*.deb >/dev/null 2>&1 || ls -A pool/main/*x86_64*.deb >/dev/null 2>&1; then
+    dpkg-scanpackages --arch amd64 pool/main > dists/stable/main/binary-amd64/Packages 2>/dev/null || err "Failed to generate amd64 Packages"
+    gzip -k -f dists/stable/main/binary-amd64/Packages 2>/dev/null || err "Failed to gzip amd64 Packages"
+  else
+    err "No amd64 packages available for APT"
+  fi
   
-  dpkg-scanpackages --arch arm64 pool/main > dists/stable/main/binary-arm64/Packages 2>/dev/null || true
-  gzip -k -f dists/stable/main/binary-arm64/Packages 2>/dev/null || true
+  if ls -A pool/main/*arm64*.deb >/dev/null 2>&1 || ls -A pool/main/*aarch64*.deb >/dev/null 2>&1; then
+    dpkg-scanpackages --arch arm64 pool/main > dists/stable/main/binary-arm64/Packages 2>/dev/null || err "Failed to generate arm64 Packages"
+    gzip -k -f dists/stable/main/binary-arm64/Packages 2>/dev/null || err "Failed to gzip arm64 Packages"
+  else
+    err "No arm64 packages available for APT"
+  fi
   
   # Generate Release file
   local release_date=$(LC_ALL=C date -u +"%a, %d %b %Y %H:%M:%S %Z")
@@ -214,6 +250,8 @@ publish_rpm() {
       else
         warn "createrepo_c not available, skipping RPM metadata generation"
       fi
+    else
+      err "No RPM packages found for $arch in dist/"
     fi
   done
   
@@ -221,29 +259,11 @@ publish_rpm() {
   log "RPM repository updated successfully"
 }
 
-validate_repos() {
-  log "Validating repositories..."
-  
-  # Check APT
-  if [[ -d "$APT_REPO_DIR" ]]; then
-    [[ -f "$APT_REPO_DIR/dists/stable/Release" ]] || err "APT Release file missing"
-    [[ -f "$APT_REPO_DIR/dists/stable/main/binary-amd64/Packages" ]] || err "APT amd64 Packages missing"
-    [[ -f "$APT_REPO_DIR/dists/stable/main/binary-arm64/Packages" ]] || err "APT arm64 Packages missing"
-    log "APT repository structure: OK"
-  fi
-  
-  # Check RPM
-  if [[ -d "$RPM_REPO_DIR" ]]; then
-    [[ -d "$RPM_REPO_DIR/x86_64" ]] || err "RPM x86_64 directory missing"
-    [[ -d "$RPM_REPO_DIR/aarch64" ]] || err "RPM aarch64 directory missing"
-    log "RPM repository structure: OK"
-  fi
-}
 
 generate_manifest() {
   log "Generating manifest..."
   
-  local manifest_file="$REPO_DIR/MANIFEST.txt"
+  local manifest_file="$STAGING_DIR/MANIFEST.txt"
   local timestamp=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
   
   cat > "$manifest_file" <<EOF
@@ -289,21 +309,45 @@ EOF
 check_deps
 acquire_lock
 
+trap 'die_with_restore' ERR
+
 log "Starting release publication process..."
 log "Distribution directory: $DIST_DIR"
 log "Repository directory: $REPO_DIR"
+log "Staging directory: $STAGING_DIR"
+log "Current directory: $CURRENT_DIR"
+
+rm -rf "$STAGING_DIR"
+mkdir -p "$STAGING_DIR"
+
+cp "$PROJECT_ROOT/site/install.sh" "$STAGING_DIR/install.sh"
+cp "$PROJECT_ROOT/site/install-rpm.sh" "$STAGING_DIR/install-rpm.sh"
 
 validate_packages
 backup_repos
 publish_apt
 publish_rpm
-validate_repos
+
+cp "$STAGING_DIR/install.sh" "$APT_REPO_DIR/install.sh"
+cp "$STAGING_DIR/install-rpm.sh" "$RPM_REPO_DIR/install-rpm.sh"
+
+cp "$PROJECT_ROOT/site/index.html.template" "$STAGING_DIR/index.html"
+
 generate_manifest
+
+"$PROJECT_ROOT/tools/validate-repos.sh" "$APT_REPO_DIR" "$RPM_REPO_DIR" "$STAGING_DIR"
+
+rm -rf "$CURRENT_DIR"
+if [[ -d "$REPO_DIR" ]]; then
+  mv "$REPO_DIR" "$CURRENT_DIR"
+fi
+mv "$STAGING_DIR" "$REPO_DIR"
+rm -rf "$CURRENT_DIR"
 
 log "Release publication completed successfully!"
 log ""
 log "Next steps:"
-log "  1. Review changes: git diff repo/"
-log "  2. Commit: git add repo/ && git commit -m 'chore: update repositories'"
+log "  1. Review changes: git diff site/public/"
+log "  2. Commit: git add site/public/ && git commit -m 'chore: update repositories'"
 log "  3. Push: git push"
 

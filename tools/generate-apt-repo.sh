@@ -4,11 +4,11 @@ set -euo pipefail
 # --- Configuration ---
 REPO_NAME="helium-browser"
 REPO_URL="https://arvaidasre.github.io/helium-browser-deb"
-REPO_DIR="${1:-repo/apt}"
+REPO_DIR="${1:-site/public/apt}"
 
 # Publish the same repo content under multiple APT distributions.
 # This lets users use their system codename (e.g. noble, jammy) while keeping one pool.
-# Override in CI via: APT_DISTS="stable noble jammy" ./scripts/generate-apt-repo.sh
+# Override in CI via: APT_DISTS="stable noble jammy" ./tools/generate-apt-repo.sh
 APT_DISTS_DEFAULT=(stable noble jammy focal bookworm bullseye)
 
 # --- Helper Functions ---
@@ -53,7 +53,16 @@ if [[ -d "dist" ]]; then
     fi
   done
 else
-  log "Warning: dist/ directory not found. Repository will be empty."
+  err "dist/ directory not found. Aborting to avoid empty repo."
+fi
+
+# Require packages for each arch
+if ! ls -A "$REPO_DIR/pool/main"/*amd64*.deb >/dev/null 2>&1 && ! ls -A "$REPO_DIR/pool/main"/*x86_64*.deb >/dev/null 2>&1; then
+  err "No amd64 .deb packages found in dist/."
+fi
+
+if ! ls -A "$REPO_DIR/pool/main"/*arm64*.deb >/dev/null 2>&1 && ! ls -A "$REPO_DIR/pool/main"/*aarch64*.deb >/dev/null 2>&1; then
+  err "No arm64 .deb packages found in dist/."
 fi
 
 # Generate Packages files
@@ -62,27 +71,27 @@ cd "$REPO_DIR"
 
 # For amd64
 if [[ -n "$(ls -A pool/main/*.deb 2>/dev/null)" ]]; then
-  dpkg-scanpackages --arch amd64 pool/main > "dists/stable/main/binary-amd64/Packages" 2>/dev/null || touch "dists/stable/main/binary-amd64/Packages"
+  dpkg-scanpackages --arch amd64 pool/main > "dists/stable/main/binary-amd64/Packages" 2>/dev/null || err "Failed to generate amd64 Packages"
 else
-  touch "dists/stable/main/binary-amd64/Packages"
+  err "No .deb files found for amd64"
 fi
-gzip -k -f "dists/stable/main/binary-amd64/Packages" 2>/dev/null || true
+gzip -k -f "dists/stable/main/binary-amd64/Packages" 2>/dev/null || err "Failed to gzip amd64 Packages"
 
 # For arm64
 if [[ -n "$(ls -A pool/main/*.deb 2>/dev/null)" ]]; then
-  dpkg-scanpackages --arch arm64 pool/main > "dists/stable/main/binary-arm64/Packages" 2>/dev/null || touch "dists/stable/main/binary-arm64/Packages"
+  dpkg-scanpackages --arch arm64 pool/main > "dists/stable/main/binary-arm64/Packages" 2>/dev/null || err "Failed to generate arm64 Packages"
 else
-  touch "dists/stable/main/binary-arm64/Packages"
+  err "No .deb files found for arm64"
 fi
-gzip -k -f "dists/stable/main/binary-arm64/Packages" 2>/dev/null || true
+gzip -k -f "dists/stable/main/binary-arm64/Packages" 2>/dev/null || err "Failed to gzip arm64 Packages"
 
 # Generate Sources file (optional, but good practice)
 if [[ -n "$(ls -A pool/main/*.deb 2>/dev/null)" ]]; then
-  dpkg-scansources pool/main > "dists/stable/main/Sources" 2>/dev/null || touch "dists/stable/main/Sources"
+  dpkg-scansources pool/main > "dists/stable/main/Sources" 2>/dev/null || err "Failed to generate Sources"
 else
-  touch "dists/stable/main/Sources"
+  err "No .deb files found for Sources"
 fi
-gzip -k -f "dists/stable/main/Sources" 2>/dev/null || true
+gzip -k -f "dists/stable/main/Sources" 2>/dev/null || err "Failed to gzip Sources"
 
 # Generate Release file
 log "Generating Release file..."
