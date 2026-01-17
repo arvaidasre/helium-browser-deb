@@ -54,8 +54,7 @@ elif [[ "$ID" == "fedora" || "$ID" == "rhel" || "$ID" == "centos" ]]; then
     ruby-devel \
     gcc \
     make \
-    createrepo_c \
-    dpkg-dev
+    createrepo_c
   
   # Install FPM
   if ! command -v fpm >/dev/null 2>&1; then
