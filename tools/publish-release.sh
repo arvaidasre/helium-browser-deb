@@ -51,18 +51,21 @@ validate_packages() {
   
   local deb_count=0
   local rpm_count=0
-  
-  for deb in "$DIST_DIR"/*.deb 2>/dev/null || true; do
-    [[ -f "$deb" ]] || continue
+
+  shopt -s nullglob
+  local debs=("$DIST_DIR"/*.deb)
+  local rpms=("$DIST_DIR"/*.rpm)
+  shopt -u nullglob
+
+  for deb in "${debs[@]}"; do
     if ! dpkg -I "$deb" >/dev/null 2>&1; then
       err "Invalid DEB package: $deb"
     fi
     ((deb_count++))
   done
-  
-  for rpm in "$DIST_DIR"/*.rpm 2>/dev/null || true; do
-    [[ -f "$rpm" ]] || continue
-    if ! rpm -K "$rpm" >/dev/null 2>&1 2>&1; then
+
+  for rpm in "${rpms[@]}"; do
+    if ! rpm -K "$rpm" >/dev/null 2>&1; then
       warn "Could not verify RPM: $rpm (rpm tool may not be available)"
     fi
     ((rpm_count++))
@@ -72,19 +75,19 @@ validate_packages() {
     err "No packages found in $DIST_DIR"
   fi
 
-  if ! ls -A "$DIST_DIR"/*amd64*.deb >/dev/null 2>&1 && ! ls -A "$DIST_DIR"/*x86_64*.deb >/dev/null 2>&1; then
+  if ! compgen -G "$DIST_DIR/*amd64*.deb" >/dev/null && ! compgen -G "$DIST_DIR/*x86_64*.deb" >/dev/null; then
     err "Missing amd64 .deb package in $DIST_DIR"
   fi
 
-  if ! ls -A "$DIST_DIR"/*arm64*.deb >/dev/null 2>&1 && ! ls -A "$DIST_DIR"/*aarch64*.deb >/dev/null 2>&1; then
+  if ! compgen -G "$DIST_DIR/*arm64*.deb" >/dev/null && ! compgen -G "$DIST_DIR/*aarch64*.deb" >/dev/null; then
     err "Missing arm64 .deb package in $DIST_DIR"
   fi
 
-  if ! ls -A "$DIST_DIR"/*x86_64*.rpm >/dev/null 2>&1 && ! ls -A "$DIST_DIR"/*amd64*.rpm >/dev/null 2>&1; then
+  if ! compgen -G "$DIST_DIR/*x86_64*.rpm" >/dev/null && ! compgen -G "$DIST_DIR/*amd64*.rpm" >/dev/null; then
     err "Missing x86_64 .rpm package in $DIST_DIR"
   fi
 
-  if ! ls -A "$DIST_DIR"/*aarch64*.rpm >/dev/null 2>&1 && ! ls -A "$DIST_DIR"/*arm64*.rpm >/dev/null 2>&1; then
+  if ! compgen -G "$DIST_DIR/*aarch64*.rpm" >/dev/null && ! compgen -G "$DIST_DIR/*arm64*.rpm" >/dev/null; then
     err "Missing aarch64 .rpm package in $DIST_DIR"
   fi
   
@@ -117,8 +120,11 @@ publish_apt() {
   mkdir -p "$APT_REPO_DIR/dists/stable/main/binary-arm64"
   
   # Copy new packages
-  for deb in "$DIST_DIR"/*.deb 2>/dev/null || true; do
-    [[ -f "$deb" ]] || continue
+  shopt -s nullglob
+  local debs=("$DIST_DIR"/*.deb)
+  shopt -u nullglob
+
+  for deb in "${debs[@]}"; do
     local basename=$(basename "$deb")
     
     # Check if package already exists
@@ -141,14 +147,14 @@ publish_apt() {
   # Generate Packages files
   cd "$APT_REPO_DIR"
   
-  if ls -A pool/main/*amd64*.deb >/dev/null 2>&1 || ls -A pool/main/*x86_64*.deb >/dev/null 2>&1; then
+  if compgen -G "pool/main/*amd64*.deb" >/dev/null || compgen -G "pool/main/*x86_64*.deb" >/dev/null; then
     dpkg-scanpackages --arch amd64 pool/main > dists/stable/main/binary-amd64/Packages 2>/dev/null || err "Failed to generate amd64 Packages"
     gzip -k -f dists/stable/main/binary-amd64/Packages 2>/dev/null || err "Failed to gzip amd64 Packages"
   else
     err "No amd64 packages available for APT"
   fi
   
-  if ls -A pool/main/*arm64*.deb >/dev/null 2>&1 || ls -A pool/main/*aarch64*.deb >/dev/null 2>&1; then
+  if compgen -G "pool/main/*arm64*.deb" >/dev/null || compgen -G "pool/main/*aarch64*.deb" >/dev/null; then
     dpkg-scanpackages --arch arm64 pool/main > dists/stable/main/binary-arm64/Packages 2>/dev/null || err "Failed to generate arm64 Packages"
     gzip -k -f dists/stable/main/binary-arm64/Packages 2>/dev/null || err "Failed to gzip arm64 Packages"
   else
@@ -213,8 +219,11 @@ publish_rpm() {
   mkdir -p "$RPM_REPO_DIR/aarch64"
   
   # Copy new packages
-  for rpm in "$DIST_DIR"/*.rpm 2>/dev/null || true; do
-    [[ -f "$rpm" ]] || continue
+  shopt -s nullglob
+  local rpms=("$DIST_DIR"/*.rpm)
+  shopt -u nullglob
+
+  for rpm in "${rpms[@]}"; do
     local basename=$(basename "$rpm")
     local arch="x86_64"
     
@@ -243,7 +252,7 @@ publish_rpm() {
   cd "$RPM_REPO_DIR"
   
   for arch in x86_64 aarch64; do
-    if [[ -n "$(ls -A $arch/*.rpm 2>/dev/null)" ]]; then
+    if compgen -G "$arch/*.rpm" >/dev/null; then
       log "Generating metadata for $arch..."
       if command -v createrepo_c >/dev/null 2>&1; then
         createrepo_c --update "$arch" 2>/dev/null || createrepo_c "$arch" 2>/dev/null || true
@@ -278,8 +287,10 @@ Architectures: amd64, arm64
 Packages:
 EOF
   
-  for deb in "$APT_REPO_DIR/pool/main"/*.deb 2>/dev/null || true; do
-    [[ -f "$deb" ]] || continue
+  shopt -s nullglob
+  local debs=("$APT_REPO_DIR/pool/main"/*.deb)
+  shopt -u nullglob
+  for deb in "${debs[@]}"; do
     local size=$(stat -c%s "$deb" 2>/dev/null || stat -f%z "$deb" 2>/dev/null || echo "0")
     local hash=$(sha256sum "$deb" | cut -d' ' -f1)
     echo "  $(basename "$deb") (size: $size, sha256: $hash)" >> "$manifest_file"
@@ -294,8 +305,10 @@ Architectures: x86_64, aarch64
 Packages:
 EOF
   
-  for rpm in "$RPM_REPO_DIR"/*/*.rpm 2>/dev/null || true; do
-    [[ -f "$rpm" ]] || continue
+  shopt -s nullglob
+  local rpms=("$RPM_REPO_DIR"/*/*.rpm)
+  shopt -u nullglob
+  for rpm in "${rpms[@]}"; do
     local size=$(stat -c%s "$rpm" 2>/dev/null || stat -f%z "$rpm" 2>/dev/null || echo "0")
     local hash=$(sha256sum "$rpm" | cut -d' ' -f1)
     echo "  $(basename "$rpm") (size: $size, sha256: $hash)" >> "$manifest_file"
