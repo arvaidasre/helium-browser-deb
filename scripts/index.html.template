@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helium Browser — Linux Repository</title>
+    <meta name="description" content="Official Helium Browser repository for Linux systems.">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --fg: #111827;
+            --muted: #6b7280;
+            --border: #e5e7eb;
+            --accent: #2563eb;
+            --accent-soft: #eff6ff;
+            --card-bg: #f9fafb;
+            --code-bg: #111827;
+            --code-fg: #f3f4f6;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #030712;
+                --fg: #f9fafb;
+                --muted: #9ca3af;
+                --border: #1f2937;
+                --accent: #3b82f6;
+                --accent-soft: #172554;
+                --card-bg: #111827;
+                --code-bg: #000000;
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--fg);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        .lang-switcher {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .lang-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .lang-btn:hover {
+            border-color: var(--accent);
+            color: var(--fg);
+        }
+
+        .lang-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 1.125rem;
+            min-height: 1.5em;
+        }
+
+        .version-badge {
+            display: inline-flex;
+            align-items: center;
+            background: var(--accent-soft);
+            color: var(--accent);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+
+        section {
+            margin-bottom: 3rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 640px) {
+            .grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .card h3 {
+            font-size: 1.125rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            color: var(--muted);
+            font-size: 0.875rem;
+            margin-bottom: 1.25rem;
+            min-height: 2.5em;
+        }
+
+        .download-area {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            background: var(--fg);
+            color: var(--bg);
+            text-decoration: none;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-1px);
+            opacity: 0.9;
+        }
+
+        .download-btn.secondary {
+            background: var(--accent-soft);
+            color: var(--accent);
+            border: 1px solid var(--border);
+        }
+
+        .code-block {
+            background: var(--code-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            position: relative;
+            margin-top: 0.5rem;
+        }
+
+        pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            color: var(--code-fg);
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .code-block:hover .copy-btn { opacity: 1; }
+        .copy-btn:hover { background: rgba(255,255,255,0.2); }
+
+        .manual-setup {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+        }
+
+        details {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+
+        summary {
+            padding: 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            list-style: none;
+        }
+
+        details[open] summary {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .details-content {
+            padding: 1rem;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 6rem;
+            color: var(--muted);
+            font-size: 0.875rem;
+        }
+
+        footer a {
+            color: var(--fg);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        footer a:hover { color: var(--accent); }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #111827;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 50;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="lang-switcher">
+        <button class="lang-btn active" onclick="setLang('en')">EN</button>
+        <button class="lang-btn" onclick="setLang('lt')">LT</button>
+        <button class="lang-btn" onclick="setLang('ru')">RU</button>
+    </div>
+
+    <header>
+        <div class="logo">
+            <img src="https://avatars.githubusercontent.com/u/234597297?v=4" alt="Helium Logo">
+        </div>
+        <h1>Helium Browser</h1>
+        <p class="subtitle" id="t-subtitle">Fast, secure and privacy-respecting browser for Linux users.</p>
+        <div id="version-container" class="version-badge" style="display: none;">
+            <i class="fa-solid fa-code-branch" style="margin-right: 0.5rem;"></i>
+            <span id="latest-version">...</span>
+        </div>
+    </header>
+
+    <section>
+        <h2 id="t-quick-install"><i class="fa-solid fa-bolt"></i> Quick Install</h2>
+        <div class="grid">
+            <div class="card">
+                <h3><i class="fa-brands fa-ubuntu"></i> Ubuntu / Debian</h3>
+                <p id="t-for-ubuntu">For Ubuntu, Debian, Linux Mint, etc.</p>
+                <div class="code-block">
+                    <button class="copy-btn" id="t-copy-1" onclick="copyText(this)"><i class="fa-regular fa-copy"></i></button>
+                    <pre>curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install.sh | bash</pre>
+                </div>
+                <div class="download-area" id="deb-downloads">
+                    <!-- Dynamic buttons -->
+                </div>
+            </div>
+            <div class="card">
+                <h3><i class="fa-brands fa-fedora"></i> Fedora / RPM</h3>
+                <p id="t-for-fedora">For Fedora, RHEL, CentOS, Rocky.</p>
+                <div class="code-block">
+                    <button class="copy-btn" id="t-copy-2" onclick="copyText(this)"><i class="fa-regular fa-copy"></i></button>
+                    <pre>curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash</pre>
+                </div>
+                <div class="download-area" id="rpm-downloads">
+                    <!-- Dynamic buttons -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="manual-setup">
+        <h2 id="t-manual-setup"><i class="fa-solid fa-gear"></i> Manual Setup</h2>
+        <details>
+            <summary id="t-apt-title"><i class="fa-solid fa-terminal"></i> APT Repository (Debian/Ubuntu)</summary>
+            <div class="details-content">
+                <p id="t-apt-desc" style="margin-bottom: 1rem; font-size: 0.875rem; color: var(--muted);">Add the repository to your system manually:</p>
+                <div class="code-block">
+                    <button class="copy-btn" id="t-copy-3" onclick="copyText(this)"><i class="fa-regular fa-copy"></i></button>
+                    <pre>echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/helium-browser-deb/apt stable main" | sudo tee /etc/apt/sources.list.d/helium-browser.list
+sudo apt update
+sudo apt install helium-browser</pre>
+                </div>
+            </div>
+        </details>
+
+        <details>
+            <summary id="t-rpm-title"><i class="fa-solid fa-terminal"></i> RPM Repository (Fedora/RHEL)</summary>
+            <div class="details-content">
+                <p id="t-rpm-desc" style="margin-bottom: 1rem; font-size: 0.875rem; color: var(--muted);">Create the repository file:</p>
+                <div class="code-block">
+                    <button class="copy-btn" id="t-copy-4" onclick="copyText(this)"><i class="fa-regular fa-copy"></i></button>
+                    <pre>sudo tee /etc/yum.repos.d/helium.repo << 'EOF'
+[helium]
+name=Helium Browser
+baseurl=https://arvaidasre.github.io/helium-browser-deb/rpm/$basearch
+enabled=1
+gpgcheck=0
+EOF
+sudo dnf install helium-browser</pre>
+                </div>
+            </div>
+        </details>
+    </section>
+
+    <footer>
+        <p><span id="t-maintained">Project maintained on</span> <a href="https://github.com/arvaidasre/helium-browser-deb" target="_blank"><i class="fa-brands fa-github"></i> GitHub</a></p>
+        <p style="margin-top: 0.5rem; opacity: 0.7;">&copy; 2025 Arvaidas Rekis. Upstream: <a href="https://github.com/imputnet/helium-linux" target="_blank">Helium Linux</a></p>
+    </footer>
+</div>
+
+<div id="toast" class="toast">Copied!</div>
+
+<script>
+    const translations = {
+        en: {
+            subtitle: "Fast, secure and privacy-respecting browser for Linux users.",
+            latest_version_prefix: "Latest version: ",
+            quick_install: "⚡ Quick Install",
+            for_ubuntu: "For Ubuntu, Debian, Linux Mint, etc.",
+            for_fedora: "For Fedora, RHEL, CentOS, Rocky.",
+            manual_setup: "🛠 Manual Setup",
+            apt_title: "APT Repository (Debian/Ubuntu)",
+            rpm_title: "RPM Repository (Fedora/RHEL)",
+            apt_desc: "Add the repository to your system manually:",
+            rpm_desc: "Create the repository file:",
+            copy: "Copy",
+            copied_toast: "Copied!",
+            maintained: "Project maintained on",
+            download_manual: "Download .deb manually",
+            download_manual_rpm: "Download .rpm manually",
+            download_btn: "Download"
+        },
+        lt: {
+            subtitle: "Greita, saugi ir privatumą gerbianti naršyklė Linux vartotojams.",
+            latest_version_prefix: "Naujausia versija: ",
+            quick_install: "⚡ Greitas diegimas",
+            for_ubuntu: "Skirta Ubuntu, Debian, Linux Mint ir kt.",
+            for_fedora: "Skirta Fedora, RHEL, CentOS, Rocky.",
+            manual_setup: "🛠 Rankinis konfigūravimas",
+            apt_title: "APT repozitorija (Debian/Ubuntu)",
+            rpm_title: "RPM repozitorija (Fedora/RHEL)",
+            apt_desc: "Pridėkite repozitoriją prie savo sistemos rankiniu būdu:",
+            rpm_desc: "Sukurkite repozitorijos failą:",
+            copy: "Kopijuoti",
+            copied_toast: "Nukopijuota!",
+            maintained: "Projektas prižiūrimas",
+            download_manual: "Atsisiųsti .deb rankiniu būdu",
+            download_manual_rpm: "Atsisiųsti .rpm rankiniu būdu",
+            download_btn: "Atsisiųsti"
+        },
+        ru: {
+            subtitle: "Быстрый, безопасный и уважающий конфиденциальность браузер для пользователей Linux.",
+            latest_version_prefix: "Последняя версия: ",
+            quick_install: "⚡ Быстрая установка",
+            for_ubuntu: "Для Ubuntu, Debian, Linux Mint и др.",
+            for_fedora: "Для Fedora, RHEL, CentOS, Rocky.",
+            manual_setup: "🛠 Ручная настройка",
+            apt_title: "APT репозиторий (Debian/Ubuntu)",
+            rpm_title: "RPM репозиторий (Fedora/RHEL)",
+            apt_desc: "Добавьте репозиторий в свою систему вручную:",
+            rpm_desc: "Создайте файл репозитория:",
+            copy: "Копировать",
+            copied_toast: "Скопировано!",
+            maintained: "Проект поддерживается на",
+            download_manual: "Скачать .deb вручную",
+            download_manual_rpm: "Скачать .rpm вручную",
+            download_btn: "Скачать"
+        }
+    };
+
+    let currentLang = 'en';
+    let latestVersionTag = '';
+    let latestAssets = [];
+
+    async function loadVersion() {
+        try {
+            const res = await fetch('https://api.github.com/repos/arvaidasre/helium-browser-deb/releases/latest');
+            if (res.ok) {
+                const data = await res.json();
+                latestVersionTag = data.tag_name;
+                latestAssets = data.assets;
+                updateVersionDisplay();
+                updateDownloadButtons();
+                document.getElementById('version-container').style.display = 'inline-flex';
+            }
+        } catch (e) {}
+    }
+
+    function updateDownloadButtons() {
+        const debContainer = document.getElementById('deb-downloads');
+        const rpmContainer = document.getElementById('rpm-downloads');
+        if (!debContainer || !rpmContainer) return;
+        
+        debContainer.innerHTML = '';
+        rpmContainer.innerHTML = '';
+
+        latestAssets.forEach(asset => {
+            const name = asset.name.toLowerCase();
+            let arch = '';
+            if (name.includes('amd64') || name.includes('x86_64')) arch = 'x64';
+            else if (name.includes('arm64') || name.includes('aarch64')) arch = 'ARM64';
+
+            if (!arch) return;
+
+            const btn = document.createElement('a');
+            btn.href = asset.browser_download_url;
+            btn.className = 'download-btn';
+            if (arch === 'ARM64') btn.classList.add('secondary');
+            
+            const t = translations[currentLang];
+            btn.innerHTML = `<span><i class="fa-solid fa-download"></i> ${t.download_btn} ${name.endsWith('.deb') ? '.deb' : '.rpm'} (${arch})</span>`;
+            
+            if (name.endsWith('.deb')) {
+                debContainer.appendChild(btn);
+            } else if (name.endsWith('.rpm')) {
+                rpmContainer.appendChild(btn);
+            }
+        });
+    }
+
+    function updateVersionDisplay() {
+        if (latestVersionTag) {
+            document.getElementById('latest-version').textContent = translations[currentLang].latest_version_prefix + latestVersionTag;
+        }
+    }
+
+    function setLang(lang) {
+        currentLang = lang;
+        document.documentElement.lang = lang;
+        
+        // Update active button
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.textContent.toLowerCase() === lang);
+        });
+
+        // Update texts
+        const t = translations[lang];
+        document.getElementById('t-subtitle').textContent = t.subtitle;
+        document.getElementById('t-quick-install').textContent = t.quick_install;
+        document.getElementById('t-for-ubuntu').textContent = t.for_ubuntu;
+        document.getElementById('t-for-fedora').textContent = t.for_fedora;
+        document.getElementById('t-manual-setup').textContent = t.manual_setup;
+        document.getElementById('t-apt-title').textContent = t.apt_title;
+        document.getElementById('t-rpm-title').textContent = t.rpm_title;
+        document.getElementById('t-apt-desc').textContent = t.apt_desc;
+        document.getElementById('t-rpm-desc').textContent = t.rpm_desc;
+        document.getElementById('t-maintained').textContent = t.maintained;
+        
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            if (btn.querySelector('.fa-check')) return;
+            btn.innerHTML = '<i class="fa-regular fa-copy"></i>';
+        });
+
+        document.getElementById('toast').textContent = t.copied_toast;
+        
+        updateVersionDisplay();
+        updateDownloadButtons();
+        localStorage.setItem('preferred-lang', lang);
+    }
+
+    function copyText(btn) {
+        const pre = btn.nextElementSibling;
+        const text = pre.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+            
+            const originalIcon = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+            setTimeout(() => {
+                btn.innerHTML = originalIcon;
+            }, 2000);
+        });
+    }
+
+    function getPreferredLanguage() {
+        // 1. Pirmiausia tikriname, ar vartotojas jau rankiniu būdu pasirinko kalbą anksčiau
+        const stored = localStorage.getItem('preferred-lang');
+        if (stored && translations[stored]) return stored;
+
+        // 2. Tikriname sistemos/naršyklės kalbų sąrašą (prioriteto tvarka)
+        if (navigator.languages) {
+            for (const lang of navigator.languages) {
+                const short = lang.split('-')[0];
+                if (translations[short]) return short;
+            }
+        }
+
+        // 3. Senesnių naršyklių palaikymas
+        const navLang = (navigator.language || navigator.userLanguage || '').split('-')[0];
+        if (translations[navLang]) return navLang;
+
+        // 4. Standartinė kalba, jei nieko neradome
+        return 'en';
+    }
+
+    const initialLang = getPreferredLanguage();
+    setLang(initialLang);
+    loadVersion();
+</script>
+
+</body>
+</html>

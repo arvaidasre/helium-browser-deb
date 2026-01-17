@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Helium Browser — Linux Repository</title>
+    <meta name="description" content="Install Helium Browser on Linux via APT or DNF. Fast, secure, privacy-focused.">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="color-scheme" content="light">
+    <script>
+        (function () {
+            try {
+                if (window.location && window.location.protocol === 'file:') {
+                    window.location.replace('../scripts/index.html.template');
+                }
+            } catch (e) {
+            }
+        })();
+    </script>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --white: #ffffff;
+            --black: #0a0a0a;
+            --gray-50: #fafafa;
+            --gray-100: #f4f4f5;
+            --gray-200: #e4e4e7;
+            --gray-400: #a1a1aa;
+            --gray-500: #71717a;
+            --gray-600: #52525b;
+            --gray-900: #18181b;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, monospace;
+            --shadow-sm: 0 1px 0 rgba(0,0,0,0.04);
+            --shadow-md: 0 14px 35px rgba(0,0,0,0.06);
+        }
+
+        html { scroll-behavior: smooth; }
+        
+        body {
+            font-family: var(--font);
+            background: var(--gray-50);
+            color: var(--black);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button {
+            font-family: inherit;
+        }
+
+        a:focus-visible,
+        button:focus-visible,
+        summary:focus-visible {
+            outline: 2px solid var(--black);
+            outline-offset: 3px;
+            border-radius: 10px;
+        }
+
+        /* Loading Screen */
+        .loader {
+            position: fixed;
+            inset: 0;
+            background: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.4s ease;
+        }
+        .loader.hide { opacity: 0; pointer-events: none; }
+        .loader-spinner {
+            width: 32px;
+            height: 32px;
+            border: 2px solid var(--gray-200);
+            border-top-color: var(--black);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Layout */
+        .wrapper {
+            max-width: 860px;
+            margin: 24px auto;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: 16px;
+            box-shadow: var(--shadow-md);
+            padding: clamp(48px, 7vw, 84px) clamp(16px, 4vw, 24px) clamp(40px, 6vw, 64px);
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: clamp(36px, 6vw, 64px);
+        }
+        .header h1 {
+            font-size: clamp(2rem, 5.5vw, 2.75rem);
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            margin-bottom: 12px;
+        }
+        .header p {
+            color: var(--gray-500);
+            font-size: clamp(1rem, 2.4vw, 1.1rem);
+        }
+
+        .nav {
+            margin-top: 18px;
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+            font-size: 0.9rem;
+        }
+
+        .nav a {
+            color: var(--gray-600);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+        }
+
+        .nav a:hover { border-bottom-color: var(--gray-400); }
+        .versions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .badge:hover { opacity: 0.8; }
+        .badge-dark {
+            background: var(--black);
+            color: var(--white);
+        }
+        .badge-light {
+            background: var(--gray-100);
+            color: var(--gray-600);
+            border: 1px solid var(--gray-200);
+        }
+        .badge code {
+            font-family: var(--mono);
+            font-weight: 600;
+        }
+
+        /* Section */
+        section {
+            margin-bottom: 56px;
+        }
+        section h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.01em;
+        }
+        section > p {
+            color: var(--gray-500);
+            margin-bottom: 20px;
+        }
+
+        /* Cards Grid */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+        }
+        .card {
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 20px;
+            background: var(--white);
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .card:hover {
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-md);
+            }
+        }
+        .card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .card .desc {
+            color: var(--gray-500);
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+        }
+
+        /* Code Block */
+        .code-wrap {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--gray-100);
+        }
+        .code-header span {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .copy-btn {
+            background: var(--black);
+            color: var(--white);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            min-height: 40px;
+            min-width: 72px;
+            touch-action: manipulation;
+        }
+        .copy-btn:hover { opacity: 0.8; }
+        .copy-btn.copied { background: var(--gray-600); }
+        .code-body {
+            padding: 14px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .code-body pre {
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            white-space: pre;
+            color: var(--gray-900);
+        }
+
+        /* Accordion */
+        details {
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            background: var(--white);
+        }
+        details[open] { background: var(--gray-50); }
+        summary {
+            padding: 16px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            list-style: none;
+            min-height: 52px;
+        }
+        summary::-webkit-details-marker { display: none; }
+        summary::after {
+            content: "+";
+            font-size: 1.2rem;
+            color: var(--gray-400);
+            transition: transform 0.2s;
+        }
+        details[open] summary::after {
+            content: "−";
+        }
+        .details-content {
+            padding: 0 20px 20px;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding-top: 40px;
+            border-top: 1px solid var(--gray-200);
+            color: var(--gray-500);
+            font-size: 0.9rem;
+        }
+        footer a {
+            color: var(--black);
+            text-decoration: none;
+            margin: 0 12px;
+        }
+        footer a:hover { text-decoration: underline; }
+        footer p { margin-top: 16px; }
+
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: calc(18px + env(safe-area-inset-bottom));
+            transform: translateX(-50%) translateY(8px);
+            background: var(--black);
+            color: var(--white);
+            padding: 10px 14px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            z-index: 1100;
+            max-width: calc(100vw - 32px);
+            text-align: center;
+            white-space: normal;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            body { background: var(--white); }
+            .wrapper { margin: 0 auto; border: 0; border-radius: 0; box-shadow: none; }
+            .cards { grid-template-columns: 1fr; }
+            .versions { flex-direction: column; width: 100%; }
+            .badge { width: 100%; justify-content: center; }
+            .code-header span { display: none; }
+            .code-header {
+                justify-content: flex-end;
+                background: transparent;
+                border-bottom: 0;
+                padding: 12px 12px 0;
+            }
+            .code-body {
+                padding: 10px 12px 12px;
+                overflow-x: hidden;
+            }
+            .code-body pre {
+                font-size: 0.82rem;
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+            .card { padding: 16px; }
+            .copy-btn { min-height: 44px; min-width: 0; border-radius: 999px; }
+            summary { padding: 14px 16px; }
+            .details-content { padding: 0 16px 16px; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .loader { transition: none; }
+            .loader-spinner { animation: none; }
+            .card { transition: none; }
+            .toast { transition: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading -->
+    <div class="loader" id="loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <div class="toast" id="toast" aria-live="polite" aria-atomic="true"></div>
+
+    <div class="wrapper">
+        <!-- Header -->
+        <header class="header">
+            <h1>Helium Browser</h1>
+            <p>Fast, secure, and privacy-focused browser for Linux</p>
+            <div class="nav">
+                <a href="#install">Install</a>
+                <a href="#manual">Manual</a>
+                <a href="https://github.com/arvaidasre/helium-browser-deb/releases" target="_blank" rel="noopener">Releases</a>
+            </div>
+            <div class="versions">
+                <a class="badge badge-dark" id="stableLink" href="https://github.com/arvaidasre/helium-browser-deb/releases" target="_blank" rel="noopener">
+                    Stable <code id="stableVersion">—</code>
+                </a>
+                <a class="badge badge-light" id="preLink" href="https://github.com/arvaidasre/helium-browser-deb/releases" target="_blank" rel="noopener" style="display:none;">
+                    Pre-release <code id="preVersion">—</code>
+                </a>
+            </div>
+        </header>
+
+        <!-- Quick Install -->
+        <section id="install">
+            <h2>Quick Install</h2>
+            <p>Run a single command to install. Updates are delivered via your package manager.</p>
+            <div class="cards">
+                <div class="card">
+                    <h3>Debian / Ubuntu</h3>
+                    <p class="desc">Ubuntu, Debian, Linux Mint</p>
+                    <div class="code-wrap">
+                        <div class="code-header">
+                            <span>Terminal</span>
+                            <button class="copy-btn" type="button">Copy</button>
+                        </div>
+                        <div class="code-body">
+                            <pre>curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install.sh | bash</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Fedora / RHEL</h3>
+                    <p class="desc">Fedora, RHEL, CentOS, Rocky</p>
+                    <div class="code-wrap">
+                        <div class="code-header">
+                            <span>Terminal</span>
+                            <button class="copy-btn" type="button">Copy</button>
+                        </div>
+                        <div class="code-body">
+                            <pre>curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Manual Install -->
+        <section id="manual">
+            <h2>Manual Setup</h2>
+            <p>Configure the repository yourself if you prefer manual control.</p>
+
+            <details>
+                <summary>
+                    <span>APT Repository</span>
+                </summary>
+                <div class="details-content">
+                    <div class="code-wrap">
+                        <div class="code-header">
+                            <span>Terminal</span>
+                            <button class="copy-btn" type="button">Copy</button>
+                        </div>
+                        <div class="code-body">
+                            <pre>echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/helium-browser-deb/apt stable main" | sudo tee /etc/apt/sources.list.d/helium-browser.list
+sudo apt update
+sudo apt install helium-browser</pre>
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <details>
+                <summary>
+                    <span>RPM Repository</span>
+                </summary>
+                <div class="details-content">
+                    <div class="code-wrap">
+                        <div class="code-header">
+                            <span>Terminal</span>
+                            <button class="copy-btn" type="button">Copy</button>
+                        </div>
+                        <div class="code-body">
+                            <pre>sudo tee /etc/yum.repos.d/helium.repo &lt;&lt; 'EOF'
+[helium]
+name=Helium Browser
+baseurl=https://arvaidasre.github.io/helium-browser-deb/rpm/$basearch
+enabled=1
+gpgcheck=0
+EOF
+
+sudo dnf install helium-browser</pre>
+                        </div>
+                    </div>
+                </div>
+            </details>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div>
+                <a href="https://github.com/arvaidasre/helium-browser-deb" target="_blank" rel="noopener">GitHub</a>
+                <a href="https://github.com/imputnet/helium-linux" target="_blank" rel="noopener">Upstream</a>
+                <a href="https://github.com/arvaidasre/helium-browser-deb/issues" target="_blank" rel="noopener">Issues</a>
+            </div>
+            <p>&copy; 2025 Arvaidas Rekis</p>
+        </footer>
+    </div>
+
+    <script>
+        (function() {
+            // Fetch versions
+            async function loadVersions() {
+                try {
+                    const res = await fetch('https://api.github.com/repos/arvaidasre/helium-browser-deb/releases?per_page=20');
+                    if (!res.ok) throw new Error();
+                    const data = await res.json();
+                    let stable = null, pre = null;
+                    for (const r of data) {
+                        if (!r.draft && !r.prerelease && !stable) stable = r;
+                        if (!r.draft && r.prerelease && !pre) pre = r;
+                        if (stable && pre) break;
+                    }
+                    if (stable) {
+                        document.getElementById('stableVersion').textContent = stable.tag_name;
+                        document.getElementById('stableLink').href = stable.html_url;
+                    }
+                    if (pre) {
+                        document.getElementById('preVersion').textContent = pre.tag_name;
+                        document.getElementById('preLink').href = pre.html_url;
+                        document.getElementById('preLink').style.display = 'inline-flex';
+                    }
+                } catch (e) {
+                    document.getElementById('stableVersion').textContent = 'v0.7.5.1';
+                }
+            }
+
+            function showToast(message) {
+                const toast = document.getElementById('toast');
+                if (!toast) return;
+
+                toast.textContent = message;
+                toast.classList.add('show');
+                clearTimeout(showToast._t);
+                showToast._t = setTimeout(() => toast.classList.remove('show'), 1400);
+            }
+
+            function copyFallback(text) {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.setAttribute('readonly', '');
+                ta.style.position = 'fixed';
+                ta.style.top = '-1000px';
+                ta.style.left = '-1000px';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                ta.setSelectionRange(0, ta.value.length);
+                let ok = false;
+                try {
+                    ok = document.execCommand('copy');
+                } catch (e) {
+                    ok = false;
+                }
+                document.body.removeChild(ta);
+                return ok;
+            }
+
+            async function copyText(text) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                }
+                return copyFallback(text);
+            }
+
+            function setupCopy() {
+                document.querySelectorAll('.code-wrap').forEach(wrap => {
+                    const btn = wrap.querySelector('.copy-btn');
+                    const pre = wrap.querySelector('pre');
+                    if (!btn || !pre) return;
+                    btn.addEventListener('click', async () => {
+                        try {
+                            const text = (pre.textContent || '').replace(/\n+$/g, '');
+                            const ok = await copyText(text);
+                            if (!ok) throw new Error('Copy failed');
+                            btn.textContent = 'Copied';
+                            btn.classList.add('copied');
+                            showToast('Copied to clipboard');
+                            setTimeout(() => {
+                                btn.textContent = 'Copy';
+                                btn.classList.remove('copied');
+                            }, 1500);
+                        } catch (e) {
+                            showToast('Copy failed — select and copy manually');
+                        }
+                    });
+                });
+            }
+
+            // Init
+            window.addEventListener('load', () => {
+                loadVersions();
+                setupCopy();
+                setTimeout(() => {
+                    const loader = document.getElementById('loader');
+                    loader.classList.add('hide');
+                    setTimeout(() => loader.remove(), 400);
+                }, 300);
+            });
+        })();
+    </script>
+</body>
+</html>
