@@ -51,6 +51,10 @@ validate_packages() {
   
   local deb_count=0
   local rpm_count=0
+  local has_deb_amd64=false
+  local has_deb_arm64=false
+  local has_rpm_x86=false
+  local has_rpm_arm=false
 
   shopt -s nullglob
   local debs=("$DIST_DIR"/*.deb)
@@ -62,32 +66,50 @@ validate_packages() {
       err "Invalid DEB package: $deb"
     fi
     ((deb_count++))
+    local name=$(basename "$deb")
+    name=${name,,}
+    if [[ "$name" == *amd64* || "$name" == *x86_64* ]]; then
+      has_deb_amd64=true
+    fi
+    if [[ "$name" == *arm64* || "$name" == *aarch64* ]]; then
+      has_deb_arm64=true
+    fi
   done
 
   for rpm in "${rpms[@]}"; do
-    if ! rpm -K "$rpm" >/dev/null 2>&1; then
-      warn "Could not verify RPM: $rpm (rpm tool may not be available)"
+    if command -v rpm >/dev/null 2>&1; then
+      if ! rpm -K "$rpm" >/dev/null 2>&1; then
+        warn "Could not verify RPM: $rpm"
+      fi
     fi
     ((rpm_count++))
+    local name=$(basename "$rpm")
+    name=${name,,}
+    if [[ "$name" == *x86_64* || "$name" == *amd64* ]]; then
+      has_rpm_x86=true
+    fi
+    if [[ "$name" == *aarch64* || "$name" == *arm64* ]]; then
+      has_rpm_arm=true
+    fi
   done
   
   if [[ $deb_count -eq 0 && $rpm_count -eq 0 ]]; then
     err "No packages found in $DIST_DIR"
   fi
 
-  if ! compgen -G "$DIST_DIR/*amd64*.deb" >/dev/null && ! compgen -G "$DIST_DIR/*x86_64*.deb" >/dev/null; then
+  if [[ "$has_deb_amd64" != "true" ]]; then
     err "Missing amd64 .deb package in $DIST_DIR"
   fi
 
-  if ! compgen -G "$DIST_DIR/*arm64*.deb" >/dev/null && ! compgen -G "$DIST_DIR/*aarch64*.deb" >/dev/null; then
+  if [[ "$has_deb_arm64" != "true" ]]; then
     err "Missing arm64 .deb package in $DIST_DIR"
   fi
 
-  if ! compgen -G "$DIST_DIR/*x86_64*.rpm" >/dev/null && ! compgen -G "$DIST_DIR/*amd64*.rpm" >/dev/null; then
+  if [[ "$has_rpm_x86" != "true" ]]; then
     err "Missing x86_64 .rpm package in $DIST_DIR"
   fi
 
-  if ! compgen -G "$DIST_DIR/*aarch64*.rpm" >/dev/null && ! compgen -G "$DIST_DIR/*arm64*.rpm" >/dev/null; then
+  if [[ "$has_rpm_arm" != "true" ]]; then
     err "Missing aarch64 .rpm package in $DIST_DIR"
   fi
   
