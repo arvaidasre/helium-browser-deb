@@ -30,37 +30,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install check dependencies
+      - name: Verify check dependencies
         run: |
           set -euo pipefail
-          install_pkgs() {
-            local pkgs=(curl jq git)
-            if command -v dnf >/dev/null 2>&1; then
-              if [[ "$(id -u)" -eq 0 ]]; then
-                dnf install -y "${pkgs[@]}"
-              elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-                sudo dnf install -y "${pkgs[@]}"
-              else
-                echo "Need root or passwordless sudo to install packages."
-                exit 1
-              fi
-            elif command -v apt-get >/dev/null 2>&1; then
-              if [[ "$(id -u)" -eq 0 ]]; then
-                apt-get update
-                apt-get install -y "${pkgs[@]}"
-              elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-                sudo apt-get update
-                sudo apt-get install -y "${pkgs[@]}"
-              else
-                echo "Need root or passwordless sudo to install packages."
-                exit 1
-              fi
-            else
-              echo "Unsupported OS package manager"
+          for cmd in curl jq git; do
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+              echo "Missing dependency: $cmd"
               exit 1
             fi
-          }
-          install_pkgs
+          done
 
       - name: Check for new upstream releases
         id: check
@@ -143,42 +121,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install build dependencies
+      - name: Verify build dependencies
         run: |
           set -euo pipefail
-          install_pkgs() {
-            local pkgs=(
-              ca-certificates curl jq git tar gzip xz bzip2 zstd
-              ruby ruby-devel gcc make rpm-build dpkg dpkg-dev
-            )
-            if command -v dnf >/dev/null 2>&1; then
-              if [[ "$(id -u)" -eq 0 ]]; then
-                dnf install -y "${pkgs[@]}"
-              elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-                sudo dnf install -y "${pkgs[@]}"
-              else
-                echo "Need root or passwordless sudo to install packages."
-                exit 1
-              fi
-            elif command -v apt-get >/dev/null 2>&1; then
-              if [[ "$(id -u)" -eq 0 ]]; then
-                apt-get update
-                apt-get install -y "${pkgs[@]}"
-              elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-                sudo apt-get update
-                sudo apt-get install -y "${pkgs[@]}"
-              else
-                echo "Need root or passwordless sudo to install packages."
-                exit 1
-              fi
-            else
-              echo "Unsupported OS package manager"
+          deps=(
+            ca-certificates curl jq git tar gzip xz bzip2 zstd
+            ruby gcc make rpm dpkg dpkg-deb
+          )
+          for cmd in "${deps[@]}"; do
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+              echo "Missing dependency: $cmd"
               exit 1
             fi
-          }
-          install_pkgs
+          done
           if ! command -v fpm >/dev/null 2>&1; then
-            gem install --no-document fpm
+            echo "Missing dependency: fpm (gem install fpm)"
+            exit 1
           fi
 
       - name: Build packages
@@ -237,31 +195,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install GitHub CLI
+      - name: Verify GitHub CLI
         run: |
           set -euo pipefail
-          if command -v dnf >/dev/null 2>&1; then
-            if [[ "$(id -u)" -eq 0 ]]; then
-              dnf install -y gh
-            elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-              sudo dnf install -y gh
-            else
-              echo "Need root or passwordless sudo to install packages."
-              exit 1
-            fi
-          elif command -v apt-get >/dev/null 2>&1; then
-            if [[ "$(id -u)" -eq 0 ]]; then
-              apt-get update
-              apt-get install -y gh
-            elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-              sudo apt-get update
-              sudo apt-get install -y gh
-            else
-              echo "Need root or passwordless sudo to install packages."
-              exit 1
-            fi
-          else
-            echo "Unsupported OS package manager"
+          if ! command -v gh >/dev/null 2>&1; then
+            echo "Missing dependency: gh"
             exit 1
           fi
 
@@ -325,59 +263,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare repo build tools
+      - name: Verify repo build tools
         run: |
           set -euo pipefail
-          if command -v dnf >/dev/null 2>&1; then
-            if [[ "$(id -u)" -eq 0 ]]; then
-              dnf install -y dpkg dpkg-dev createrepo_c
-            elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-              sudo dnf install -y dpkg dpkg-dev createrepo_c
-            else
-              echo "Need root or passwordless sudo to install packages."
+          for cmd in dpkg dpkg-deb createrepo_c; do
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+              echo "Missing dependency: $cmd"
               exit 1
             fi
-          elif command -v apt-get >/dev/null 2>&1; then
-            if [[ "$(id -u)" -eq 0 ]]; then
-              apt-get update
-              apt-get install -y dpkg-dev createrepo-c
-            elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-              sudo apt-get update
-              sudo apt-get install -y dpkg-dev createrepo-c
-            else
-              echo "Need root or passwordless sudo to install packages."
-              exit 1
-            fi
-          else
-            echo "Unsupported OS package manager"
-            exit 1
-          fi
+          done
 
-      - name: Install GitHub CLI
+      - name: Verify GitHub CLI
         run: |
           set -euo pipefail
-          if command -v dnf >/dev/null 2>&1; then
-            if [[ "$(id -u)" -eq 0 ]]; then
-              dnf install -y gh
-            elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-              sudo dnf install -y gh
-            else
-              echo "Need root or passwordless sudo to install packages."
-              exit 1
-            fi
-          elif command -v apt-get >/dev/null 2>&1; then
-            if [[ "$(id -u)" -eq 0 ]]; then
-              apt-get update
-              apt-get install -y gh
-            elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-              sudo apt-get update
-              sudo apt-get install -y gh
-            else
-              echo "Need root or passwordless sudo to install packages."
-              exit 1
-            fi
-          else
-            echo "Unsupported OS package manager"
+          if ! command -v gh >/dev/null 2>&1; then
+            echo "Missing dependency: gh"
             exit 1
           fi
 
