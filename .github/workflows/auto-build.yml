@@ -1,0 +1,284 @@
+name: Auto Build and Release
+
+# Automatiskai tikrina upstream kiekvienas 3 valandas ir buildo nauja versija jei yra
+on:
+  workflow_dispatch:
+    inputs:
+      force_build:
+        description: 'Force build even if release exists'
+        type: boolean
+        default: false
+  schedule:
+    # Kas 3 valandas - 0:00, 3:00, 6:00, 9:00, 12:00, 15:00, 18:00, 21:00 UTC
+    - cron: '0 */3 * * *'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+env:
+  UPSTREAM_REPO: imputnet/helium-linux
+
+jobs:
+  check-and-build:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.check.outputs.new_version }}
+      upstream_tag: ${{ steps.check.outputs.upstream_tag }}
+      is_prerelease: ${{ steps.check.outputs.is_prerelease }}
+      should_build: ${{ steps.check.outputs.should_build }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for new upstream releases
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_BUILD: ${{ github.event.inputs.force_build }}
+        run: |
+          set -euo pipefail
+          
+          echo "Checking upstream repository: $UPSTREAM_REPO"
+          
+          # Fetch newest release (stable or prerelease)
+          RELEASES_JSON=$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${UPSTREAM_REPO}/releases" || echo "[]")
+          
+          RELEASE_JSON=$(echo "$RELEASES_JSON" | jq 'sort_by(.created_at) | last // {}')
+          RELEASE_TAG=$(echo "$RELEASE_JSON" | jq -r '.tag_name // ""')
+          
+          if [[ -z "$RELEASE_TAG" || "$RELEASE_TAG" == "null" ]]; then
+            echo "No releases found upstream"
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          echo "Latest upstream release: $RELEASE_TAG"
+          
+          # Check assets exist
+          ASSET_COUNT=$(echo "$RELEASE_JSON" | jq '[.assets[] | select(.name | test("linux.*\\.tar\\.(xz|gz|zst|bz2)$"; "i"))] | length')
+          if [[ "$ASSET_COUNT" -eq 0 ]]; then
+            echo "No Linux tarball assets found in $RELEASE_TAG"
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          # Check if prerelease
+          IS_PRERELEASE=$(echo "$RELEASE_JSON" | jq -r '.prerelease // false')
+          if [[ "$RELEASE_TAG" =~ (alpha|beta|rc|pre|preview|dev) ]]; then
+            IS_PRERELEASE="true"
+          fi
+          
+          # Check if we already have this release
+          HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}")
+          
+          if [[ "$HTTP_CODE" == "200" && "$FORCE_BUILD" != "true" ]]; then
+            echo "Release $RELEASE_TAG already exists in our repo. Skipping."
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          # Check creation date - don't build releases older than 2025-01-01
+          CREATED_AT=$(echo "$RELEASE_JSON" | jq -r '.created_at // ""')
+          if [[ -n "$CREATED_AT" && "$CREATED_AT" < "2025-01-01" ]]; then
+            echo "Upstream release is too old: $CREATED_AT"
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          echo "New version found: $RELEASE_TAG"
+          echo "should_build=true" >> "$GITHUB_OUTPUT"
+          echo "upstream_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "new_version=$(echo $RELEASE_TAG | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: check-and-build
+    if: needs.check-and-build.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+    outputs:
+      built: ${{ steps.build.outputs.built }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq dpkg-dev curl apt-utils ruby ruby-dev build-essential rpm createrepo-c
+          sudo gem install fpm
+
+      - name: Build packages
+        id: build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARCH_OVERRIDE: ${{ matrix.arch }}
+        run: |
+          chmod +x scripts/*.sh
+          ./scripts/build.sh
+          
+          if [[ -f "dist/meta.env" ]]; then
+            source dist/meta.env
+            if [[ "$SKIPPED" == "1" ]]; then
+              echo "Build was skipped"
+              echo "built=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          
+          # Verify packages were created
+          if ls dist/*.deb 1>/dev/null 2>&1 && ls dist/*.rpm 1>/dev/null 2>&1; then
+            echo "Packages built successfully"
+            echo "built=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No packages found"
+            echo "built=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: Upload build artifacts
+        if: steps.build.outputs.built == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.arch }}
+          path: |
+            dist/*.deb
+            dist/*.rpm
+            dist/SHA256SUMS
+            dist/meta.env
+            dist/release_title.txt
+            dist/release_notes.md
+
+  release:
+    needs: [check-and-build, build]
+    if: needs.check-and-build.outputs.should_build == 'true' && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          
+          if [[ ! -f "dist/meta.env" ]]; then
+            echo "No build artifacts found. Skipping release."
+            exit 0
+          fi
+          
+          source dist/meta.env
+          RELEASE_TITLE=$(cat dist/release_title.txt 2>/dev/null || echo "$UPSTREAM_TAG")
+          
+          echo "Creating release: $UPSTREAM_TAG"
+          
+          # Delete pre-releases before creating stable release
+          if [[ "${IS_PRERELEASE:-false}" != "true" ]]; then
+            echo "Cleaning up old pre-releases..."
+            PRERELEASES=$(gh release list --limit 100 --json tagName,isPrerelease --jq '.[] | select(.isPrerelease == true) | .tagName' || echo "")
+            if [[ -n "$PRERELEASES" ]]; then
+              echo "$PRERELEASES" | xargs -I {} gh release delete {} --yes --cleanup-tag 2>/dev/null || true
+            fi
+          fi
+          
+          # Create release
+          if [[ "${IS_PRERELEASE:-false}" == "true" ]]; then
+            gh release create "$UPSTREAM_TAG" \
+              --title "$RELEASE_TITLE" \
+              --notes-file dist/release_notes.md \
+              --prerelease \
+              dist/*.deb dist/*.rpm dist/SHA256SUMS
+          else
+            gh release create "$UPSTREAM_TAG" \
+              --title "$RELEASE_TITLE" \
+              --notes-file dist/release_notes.md \
+              dist/*.deb dist/*.rpm dist/SHA256SUMS
+          fi
+          
+          echo "Release created successfully: $UPSTREAM_TAG"
+
+  deploy-repos:
+    needs: [check-and-build, release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev createrepo-c
+
+      - name: Download packages from release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p dist
+          rm -rf dist/*
+          
+          # Get latest release
+          LATEST=$(gh api repos/${{ github.repository }}/releases/latest --jq '.tag_name' 2>/dev/null || echo "")
+          
+          if [[ -n "$LATEST" && "$LATEST" != "null" ]]; then
+            echo "Downloading packages from release: $LATEST"
+            gh release download "$LATEST" --dir dist --pattern "*.deb" --pattern "*.rpm" || true
+          fi
+
+      - name: Clean old repo data
+        run: |
+          # Remove old packages and metadata
+          find repo -name "*.deb" -delete 2>/dev/null || true
+          find repo -name "*.rpm" -delete 2>/dev/null || true
+          rm -rf repo/apt/dists/* repo/apt/pool/* 2>/dev/null || true
+          rm -rf repo/rpm/*/repodata repo/rpm/*/*.rpm 2>/dev/null || true
+
+      - name: Generate APT repository
+        run: |
+          chmod +x scripts/*.sh
+          ./scripts/generate-apt-repo.sh repo/apt
+
+      - name: Generate RPM repository
+        run: |
+          ./scripts/generate-rpm-repo.sh repo/rpm
+
+      - name: Copy install scripts
+        run: |
+          cp repo/install.sh repo/apt/ 2>/dev/null || true
+          cp repo/install-rpm.sh repo/rpm/ 2>/dev/null || true
+
+      - name: Update index page
+        run: |
+          if [[ -f "scripts/index.html.template" ]]; then
+            cp -f scripts/index.html.template repo/index.html
+          fi
+
+      - name: Validate repositories
+        run: |
+          ./scripts/validate-repos.sh repo/apt repo/rpm
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: repo
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
