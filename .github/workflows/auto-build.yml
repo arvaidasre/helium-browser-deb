@@ -177,6 +177,11 @@ jobs:
         run: |
           set -euo pipefail
           
+          if [[ ! -f "dist/meta.env" ]]; then
+            echo "No build artifacts found. Skipping release."
+            exit 0
+          fi
+          
           source dist/meta.env
           RELEASE_TITLE=$(cat dist/release_title.txt 2>/dev/null || echo "$UPSTREAM_TAG")
           
