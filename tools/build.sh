@@ -38,8 +38,15 @@ check_deps
 mkdir -p "$OUTDIR"
 
 # 1. Fetch Upstream Release Info
-log "Fetching latest release info from $UPSTREAM_REPO..."
-API_URL="https://api.github.com/repos/${UPSTREAM_REPO}/releases/latest"
+# If UPSTREAM_TAG is provided (from CI), use that specific release
+# Otherwise, fetch the latest stable release
+if [[ -n "${UPSTREAM_TAG:-}" ]]; then
+  log "Using specified release tag: $UPSTREAM_TAG"
+  API_URL="https://api.github.com/repos/${UPSTREAM_REPO}/releases/tags/${UPSTREAM_TAG}"
+else
+  log "Fetching latest stable release info from $UPSTREAM_REPO..."
+  API_URL="https://api.github.com/repos/${UPSTREAM_REPO}/releases/latest"
+fi
 JSON="$(curl -fsSL "$API_URL")"
 
 TAG="$(jq -r '.tag_name' <<<"$JSON")"

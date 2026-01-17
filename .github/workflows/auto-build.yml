@@ -121,6 +121,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ARCH_OVERRIDE: ${{ matrix.arch }}
+          UPSTREAM_TAG: ${{ needs.check-and-build.outputs.upstream_tag }}
         run: |
           chmod +x tools/*.sh
           ./tools/build.sh
