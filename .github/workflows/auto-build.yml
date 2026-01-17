@@ -231,12 +231,20 @@ jobs:
           mkdir -p dist
           rm -rf dist/*
           
-          # Get latest release
+          # Get latest stable release
           LATEST=$(gh api repos/${{ github.repository }}/releases/latest --jq '.tag_name' 2>/dev/null || echo "")
           
           if [[ -n "$LATEST" && "$LATEST" != "null" ]]; then
-            echo "Downloading packages from release: $LATEST"
+            echo "Downloading packages from stable release: $LATEST"
             gh release download "$LATEST" --dir dist --pattern "*.deb" --pattern "*.rpm" || true
+          fi
+          
+          # Get latest pre-release (if exists and different from stable)
+          PRERELEASE=$(gh api repos/${{ github.repository }}/releases --jq '[.[] | select(.prerelease == true)] | sort_by(.created_at) | last | .tag_name // ""' 2>/dev/null || echo "")
+          
+          if [[ -n "$PRERELEASE" && "$PRERELEASE" != "null" && "$PRERELEASE" != "$LATEST" ]]; then
+            echo "Downloading packages from pre-release: $PRERELEASE"
+            gh release download "$PRERELEASE" --dir dist --pattern "*.deb" --pattern "*.rpm" || true
           fi
 
       - name: Verify downloaded packages
