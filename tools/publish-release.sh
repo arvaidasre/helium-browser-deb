@@ -46,6 +46,7 @@ acquire_lock() {
 
 validate_packages() {
   log "Validating packages in $DIST_DIR..."
+  set -x
   
   [[ -d "$DIST_DIR" ]] || err "Distribution directory not found: $DIST_DIR"
   
@@ -116,6 +117,7 @@ validate_packages() {
   fi
   
   log "Found $deb_count DEB and $rpm_count RPM packages"
+  set +x
 }
 
 backup_repos() {
