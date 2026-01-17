@@ -222,7 +222,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y dpkg-dev createrepo-c
+          sudo apt-get install -y dpkg-dev createrepo-c jq
 
       - name: Download packages from release
         env:
@@ -237,6 +237,18 @@ jobs:
           if [[ -n "$LATEST" && "$LATEST" != "null" ]]; then
             echo "Downloading packages from release: $LATEST"
             gh release download "$LATEST" --dir dist --pattern "*.deb" --pattern "*.rpm" || true
+          fi
+
+      - name: Verify downloaded packages
+        run: |
+          ls -la dist
+          if ! ls dist/*.deb >/dev/null 2>&1; then
+            echo "No .deb packages downloaded" >&2
+            exit 1
+          fi
+          if ! ls dist/*.rpm >/dev/null 2>&1; then
+            echo "No .rpm packages downloaded" >&2
+            exit 1
           fi
 
       - name: Build and publish repositories
