@@ -1,16 +1,14 @@
-name: Auto Build and Release
+name: Auto Build and Release (Self-hosted)
 
-# Automatiskai tikrina upstream kiekvienas 3 valandas ir buildo nauja versija jei yra
 on:
   workflow_dispatch:
     inputs:
       force_build:
-        description: 'Force build even if release exists'
+        description: "Force build even if release exists"
         type: boolean
         default: false
   schedule:
-    # Kas 3 valandas - 0:00, 3:00, 6:00, 9:00, 12:00, 15:00, 18:00, 21:00 UTC
-    - cron: '0 */3 * * *'
+    - cron: "0 */3 * * *"
 
 permissions:
   contents: write
@@ -34,15 +32,35 @@ jobs:
 
       - name: Install check dependencies
         run: |
-          if command -v apt-get >/dev/null 2>&1; then
-            sudo apt-get update
-            sudo apt-get install -y curl jq git
-          elif command -v dnf >/dev/null 2>&1; then
-            sudo dnf install -y curl jq git
-          else
-            echo "Unsupported OS package manager"
-            exit 1
-          fi
+          set -euo pipefail
+          install_pkgs() {
+            local pkgs=(curl jq git)
+            if command -v dnf >/dev/null 2>&1; then
+              if [[ "$(id -u)" -eq 0 ]]; then
+                dnf install -y "${pkgs[@]}"
+              elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+                sudo dnf install -y "${pkgs[@]}"
+              else
+                echo "Need root or passwordless sudo to install packages."
+                exit 1
+              fi
+            elif command -v apt-get >/dev/null 2>&1; then
+              if [[ "$(id -u)" -eq 0 ]]; then
+                apt-get update
+                apt-get install -y "${pkgs[@]}"
+              elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+                sudo apt-get update
+                sudo apt-get install -y "${pkgs[@]}"
+              else
+                echo "Need root or passwordless sudo to install packages."
+                exit 1
+              fi
+            else
+              echo "Unsupported OS package manager"
+              exit 1
+            fi
+          }
+          install_pkgs
 
       - name: Check for new upstream releases
         id: check
@@ -51,57 +69,52 @@ jobs:
           FORCE_BUILD: ${{ github.event.inputs.force_build }}
         run: |
           set -euo pipefail
-          
+
           echo "Checking upstream repository: $UPSTREAM_REPO"
-          
-          # Fetch newest release (stable or prerelease)
+
           RELEASES_JSON=$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             "https://api.github.com/repos/${UPSTREAM_REPO}/releases" || echo "[]")
-          
+
           RELEASE_JSON=$(echo "$RELEASES_JSON" | jq 'sort_by(.created_at) | last // {}')
           RELEASE_TAG=$(echo "$RELEASE_JSON" | jq -r '.tag_name // ""')
-          
+
           if [[ -z "$RELEASE_TAG" || "$RELEASE_TAG" == "null" ]]; then
             echo "No releases found upstream"
             echo "should_build=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          
+
           echo "Latest upstream release: $RELEASE_TAG"
-          
-          # Check assets exist
+
           ASSET_COUNT=$(echo "$RELEASE_JSON" | jq '[.assets[] | select(.name | test("linux.*\\.tar\\.(xz|gz|zst|bz2)$"; "i"))] | length')
           if [[ "$ASSET_COUNT" -eq 0 ]]; then
             echo "No Linux tarball assets found in $RELEASE_TAG"
             echo "should_build=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          
-          # Check if prerelease
+
           IS_PRERELEASE=$(echo "$RELEASE_JSON" | jq -r '.prerelease // false')
           if [[ "$RELEASE_TAG" =~ (alpha|beta|rc|pre|preview|dev) ]]; then
             IS_PRERELEASE="true"
           fi
-          
-          # Check if we already have this release
+
           HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}")
-          
+
           if [[ "$HTTP_CODE" == "200" && "$FORCE_BUILD" != "true" ]]; then
             echo "Release $RELEASE_TAG already exists in our repo. Skipping."
             echo "should_build=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          
-          # Check creation date - don't build releases older than 2025-01-01
+
           CREATED_AT=$(echo "$RELEASE_JSON" | jq -r '.created_at // ""')
           if [[ -n "$CREATED_AT" && "$CREATED_AT" < "2025-01-01" ]]; then
             echo "Upstream release is too old: $CREATED_AT"
             echo "should_build=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          
+
           echo "New version found: $RELEASE_TAG"
           echo "should_build=true" >> "$GITHUB_OUTPUT"
           echo "upstream_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
@@ -130,23 +143,61 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build container image
+      - name: Install build dependencies
         run: |
-          docker build -t helium-builder:latest .
+          set -euo pipefail
+          install_pkgs() {
+            local pkgs=(
+              ca-certificates curl jq git tar gzip xz bzip2 zstd
+              ruby ruby-devel gcc make rpm-build dpkg dpkg-dev
+            )
+            if command -v dnf >/dev/null 2>&1; then
+              if [[ "$(id -u)" -eq 0 ]]; then
+                dnf install -y "${pkgs[@]}"
+              elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+                sudo dnf install -y "${pkgs[@]}"
+              else
+                echo "Need root or passwordless sudo to install packages."
+                exit 1
+              fi
+            elif command -v apt-get >/dev/null 2>&1; then
+              if [[ "$(id -u)" -eq 0 ]]; then
+                apt-get update
+                apt-get install -y "${pkgs[@]}"
+              elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+                sudo apt-get update
+                sudo apt-get install -y "${pkgs[@]}"
+              else
+                echo "Need root or passwordless sudo to install packages."
+                exit 1
+              fi
+            else
+              echo "Unsupported OS package manager"
+              exit 1
+            fi
+          }
+          install_pkgs
+          if ! command -v fpm >/dev/null 2>&1; then
+            gem install --no-document fpm
+          fi
 
-      - name: Build packages in Docker
+      - name: Build packages
         id: build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ARCHES: "${{ matrix.arch }}"
+          ARCH_OVERRIDE: ${{ matrix.arch }}
         run: |
           chmod +x scripts/*.sh
-          docker run --rm \
-            -e ARCHES \
-            -v "$PWD:/work" \
-            helium-builder:latest \
-            ./scripts/docker-build.sh
-          
+          ./scripts/build.sh
+
+          mkdir -p dist/${{ matrix.arch }}
+          mv dist/*.deb dist/${{ matrix.arch }}/ 2>/dev/null || true
+          mv dist/*.rpm dist/${{ matrix.arch }}/ 2>/dev/null || true
+          mv dist/SHA256SUMS dist/${{ matrix.arch }}/ 2>/dev/null || true
+          mv dist/meta.env dist/${{ matrix.arch }}/ 2>/dev/null || true
+          mv dist/release_title.txt dist/${{ matrix.arch }}/ 2>/dev/null || true
+          mv dist/release_notes.md dist/${{ matrix.arch }}/ 2>/dev/null || true
+
           if [[ -f "dist/${{ matrix.arch }}/meta.env" ]]; then
             source "dist/${{ matrix.arch }}/meta.env"
             if [[ "$SKIPPED" == "1" ]]; then
@@ -155,8 +206,7 @@ jobs:
               exit 0
             fi
           fi
-          
-          # Verify packages were created
+
           if ls "dist/${{ matrix.arch }}"/*.deb 1>/dev/null 2>&1 && ls "dist/${{ matrix.arch }}"/*.rpm 1>/dev/null 2>&1; then
             echo "Packages built successfully"
             echo "built=true" >> "$GITHUB_OUTPUT"
@@ -189,11 +239,27 @@ jobs:
 
       - name: Install GitHub CLI
         run: |
-          if command -v apt-get >/dev/null 2>&1; then
-            sudo apt-get update
-            sudo apt-get install -y gh
-          elif command -v dnf >/dev/null 2>&1; then
-            sudo dnf install -y gh
+          set -euo pipefail
+          if command -v dnf >/dev/null 2>&1; then
+            if [[ "$(id -u)" -eq 0 ]]; then
+              dnf install -y gh
+            elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+              sudo dnf install -y gh
+            else
+              echo "Need root or passwordless sudo to install packages."
+              exit 1
+            fi
+          elif command -v apt-get >/dev/null 2>&1; then
+            if [[ "$(id -u)" -eq 0 ]]; then
+              apt-get update
+              apt-get install -y gh
+            elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+              sudo apt-get update
+              sudo apt-get install -y gh
+            else
+              echo "Need root or passwordless sudo to install packages."
+              exit 1
+            fi
           else
             echo "Unsupported OS package manager"
             exit 1
@@ -218,18 +284,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          
+
           if [[ ! -f "dist/meta.env" ]]; then
             echo "No build artifacts found. Skipping release."
             exit 0
           fi
-          
+
           source dist/meta.env
           RELEASE_TITLE=$(cat dist/release_title.txt 2>/dev/null || echo "$UPSTREAM_TAG")
-          
+
           echo "Creating release: $UPSTREAM_TAG"
-          
-          # Delete pre-releases before creating stable release
+
           if [[ "${IS_PRERELEASE:-false}" != "true" ]]; then
             echo "Cleaning up old pre-releases..."
             PRERELEASES=$(gh release list --limit 100 --json tagName,isPrerelease --jq '.[] | select(.isPrerelease == true) | .tagName' || echo "")
@@ -237,8 +302,7 @@ jobs:
               echo "$PRERELEASES" | xargs -I {} gh release delete {} --yes --cleanup-tag 2>/dev/null || true
             fi
           fi
-          
-          # Create release
+
           if [[ "${IS_PRERELEASE:-false}" == "true" ]]; then
             gh release create "$UPSTREAM_TAG" \
               --title "$RELEASE_TITLE" \
@@ -251,7 +315,7 @@ jobs:
               --notes-file dist/release_notes.md \
               dist/*.deb dist/*.rpm dist/SHA256SUMS
           fi
-          
+
           echo "Release created successfully: $UPSTREAM_TAG"
 
   deploy-repos:
@@ -261,17 +325,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build container image
-        run: |
-          docker build -t helium-builder:latest .
-
       - name: Prepare repo build tools
         run: |
-          if command -v apt-get >/dev/null 2>&1; then
-            sudo apt-get update
-            sudo apt-get install -y dpkg-dev createrepo-c
-          elif command -v dnf >/dev/null 2>&1; then
-            sudo dnf install -y dpkg-dev createrepo_c
+          set -euo pipefail
+          if command -v dnf >/dev/null 2>&1; then
+            if [[ "$(id -u)" -eq 0 ]]; then
+              dnf install -y dpkg dpkg-dev createrepo_c
+            elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+              sudo dnf install -y dpkg dpkg-dev createrepo_c
+            else
+              echo "Need root or passwordless sudo to install packages."
+              exit 1
+            fi
+          elif command -v apt-get >/dev/null 2>&1; then
+            if [[ "$(id -u)" -eq 0 ]]; then
+              apt-get update
+              apt-get install -y dpkg-dev createrepo-c
+            elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+              sudo apt-get update
+              sudo apt-get install -y dpkg-dev createrepo-c
+            else
+              echo "Need root or passwordless sudo to install packages."
+              exit 1
+            fi
           else
             echo "Unsupported OS package manager"
             exit 1
@@ -279,11 +355,27 @@ jobs:
 
       - name: Install GitHub CLI
         run: |
-          if command -v apt-get >/dev/null 2>&1; then
-            sudo apt-get update
-            sudo apt-get install -y gh
-          elif command -v dnf >/dev/null 2>&1; then
-            sudo dnf install -y gh
+          set -euo pipefail
+          if command -v dnf >/dev/null 2>&1; then
+            if [[ "$(id -u)" -eq 0 ]]; then
+              dnf install -y gh
+            elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+              sudo dnf install -y gh
+            else
+              echo "Need root or passwordless sudo to install packages."
+              exit 1
+            fi
+          elif command -v apt-get >/dev/null 2>&1; then
+            if [[ "$(id -u)" -eq 0 ]]; then
+              apt-get update
+              apt-get install -y gh
+            elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+              sudo apt-get update
+              sudo apt-get install -y gh
+            else
+              echo "Need root or passwordless sudo to install packages."
+              exit 1
+            fi
           else
             echo "Unsupported OS package manager"
             exit 1
@@ -295,10 +387,9 @@ jobs:
         run: |
           mkdir -p dist
           rm -rf dist/*
-          
-          # Get latest release
+
           LATEST=$(gh api repos/${{ github.repository }}/releases/latest --jq '.tag_name' 2>/dev/null || echo "")
-          
+
           if [[ -n "$LATEST" && "$LATEST" != "null" ]]; then
             echo "Downloading packages from release: $LATEST"
             gh release download "$LATEST" --dir dist --pattern "*.deb" --pattern "*.rpm" || true
@@ -306,7 +397,6 @@ jobs:
 
       - name: Clean old repo data
         run: |
-          # Remove old packages and metadata
           find repo -name "*.deb" -delete 2>/dev/null || true
           find repo -name "*.rpm" -delete 2>/dev/null || true
           rm -rf repo/apt/dists/* repo/apt/pool/* 2>/dev/null || true
