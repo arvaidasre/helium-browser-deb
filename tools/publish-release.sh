@@ -55,18 +55,19 @@ validate_packages() {
   local has_deb_arm64=false
   local has_rpm_x86=false
   local has_rpm_arm=false
+  
+  local debs
+  local rpms
+  debs=$(ls -1 "$DIST_DIR"/*.deb 2>/dev/null || true)
+  rpms=$(ls -1 "$DIST_DIR"/*.rpm 2>/dev/null || true)
 
-  shopt -s nullglob
-  local debs=("$DIST_DIR"/*.deb)
-  local rpms=("$DIST_DIR"/*.rpm)
-  shopt -u nullglob
-
-  for deb in "${debs[@]}"; do
+  for deb in $debs; do
     if ! dpkg -I "$deb" >/dev/null 2>&1; then
       err "Invalid DEB package: $deb"
     fi
     ((deb_count++))
-    local name=$(basename "$deb")
+    local name
+    name=$(basename "$deb")
     name=${name,,}
     if [[ "$name" == *amd64* || "$name" == *x86_64* ]]; then
       has_deb_amd64=true
@@ -76,14 +77,15 @@ validate_packages() {
     fi
   done
 
-  for rpm in "${rpms[@]}"; do
+  for rpm in $rpms; do
     if command -v rpm >/dev/null 2>&1; then
       if ! rpm -K "$rpm" >/dev/null 2>&1; then
         warn "Could not verify RPM: $rpm"
       fi
     fi
     ((rpm_count++))
-    local name=$(basename "$rpm")
+    local name
+    name=$(basename "$rpm")
     name=${name,,}
     if [[ "$name" == *x86_64* || "$name" == *amd64* ]]; then
       has_rpm_x86=true
@@ -142,11 +144,10 @@ publish_apt() {
   mkdir -p "$APT_REPO_DIR/dists/stable/main/binary-arm64"
   
   # Copy new packages
-  shopt -s nullglob
-  local debs=("$DIST_DIR"/*.deb)
-  shopt -u nullglob
+  local debs
+  debs=$(ls -1 "$DIST_DIR"/*.deb 2>/dev/null || true)
 
-  for deb in "${debs[@]}"; do
+  for deb in $debs; do
     local basename=$(basename "$deb")
     
     # Check if package already exists
@@ -241,11 +242,10 @@ publish_rpm() {
   mkdir -p "$RPM_REPO_DIR/aarch64"
   
   # Copy new packages
-  shopt -s nullglob
-  local rpms=("$DIST_DIR"/*.rpm)
-  shopt -u nullglob
+  local rpms
+  rpms=$(ls -1 "$DIST_DIR"/*.rpm 2>/dev/null || true)
 
-  for rpm in "${rpms[@]}"; do
+  for rpm in $rpms; do
     local basename=$(basename "$rpm")
     local arch="x86_64"
     
