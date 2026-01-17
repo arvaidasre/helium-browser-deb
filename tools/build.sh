@@ -64,9 +64,9 @@ else
   IS_PRERELEASE="false"
 fi
 
-# 2. Check if we should skip (CI only)
+# 2. Check if we should skip (CI only, unless FORCE_BUILD is set)
 SKIPPED="0"
-if [[ -n "${GITHUB_TOKEN:-}" && -n "${GITHUB_REPOSITORY:-}" ]]; then
+if [[ -n "${GITHUB_TOKEN:-}" && -n "${GITHUB_REPOSITORY:-}" && "${FORCE_BUILD:-}" != "true" ]]; then
   log "Checking if release $TAG exists in $GITHUB_REPOSITORY..."
   HTTP_CODE="$(curl -sS -o /dev/null -w "%{http_code}" \
     -H "Authorization: Bearer ${GITHUB_TOKEN}" \
@@ -84,6 +84,8 @@ if [[ -n "${GITHUB_TOKEN:-}" && -n "${GITHUB_REPOSITORY:-}" ]]; then
     log "Upstream release is too old (pre-2025). Skipping."
     SKIPPED="1"
   fi
+elif [[ "${FORCE_BUILD:-}" == "true" ]]; then
+  log "FORCE_BUILD enabled - skipping existence check"
 fi
 
 # Save metadata for GitHub Actions

@@ -1,16 +1,21 @@
-name: Auto Build and Release
+name: Rebuild Release
 
-# Automatiskai tikrina upstream kiekvienas 3 valandas ir buildo nauja versija jei yra
+# Leidžia rankiniu būdu perkurti bet kurią esamą arba naują versiją
 on:
   workflow_dispatch:
     inputs:
-      force_build:
-        description: 'Force build even if release exists'
+      version:
+        description: 'Versija (pvz. 0.7.10.1 arba 0.8.1.1)'
+        required: true
+        type: string
+      replace_existing:
+        description: 'Perrašyti esamą release jei egzistuoja'
         type: boolean
-        default: false
-  schedule:
-    # Kas 3 valandas - 0:00, 3:00, 6:00, 9:00, 12:00, 15:00, 18:00, 21:00 UTC
-    - cron: '0 */3 * * *'
+        default: true
+      update_repos:
+        description: 'Atnaujinti APT/RPM repozitorijas po build'
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -21,91 +26,75 @@ env:
   UPSTREAM_REPO: imputnet/helium-linux
 
 jobs:
-  check-and-build:
+  validate:
     runs-on: ubuntu-latest
     outputs:
-      new_version: ${{ steps.check.outputs.new_version }}
-      upstream_tag: ${{ steps.check.outputs.upstream_tag }}
-      is_prerelease: ${{ steps.check.outputs.is_prerelease }}
-      should_build: ${{ steps.check.outputs.should_build }}
+      tag: ${{ steps.validate.outputs.tag }}
+      is_prerelease: ${{ steps.validate.outputs.is_prerelease }}
+      release_exists: ${{ steps.validate.outputs.release_exists }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check for new upstream releases
-        id: check
+      - name: Validate version exists upstream
+        id: validate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FORCE_BUILD: ${{ github.event.inputs.force_build }}
         run: |
           set -euo pipefail
           
-          echo "Checking upstream repository: $UPSTREAM_REPO"
+          VERSION="${{ github.event.inputs.version }}"
           
-          # Fetch newest release (stable or prerelease)
-          RELEASES_JSON=$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${UPSTREAM_REPO}/releases" || echo "[]")
+          # Normalize version (remove 'v' prefix if present)
+          TAG="${VERSION#v}"
           
-          RELEASE_JSON=$(echo "$RELEASES_JSON" | jq 'sort_by(.created_at) | last // {}')
-          RELEASE_TAG=$(echo "$RELEASE_JSON" | jq -r '.tag_name // ""')
+          echo "Checking if version $TAG exists in upstream repo..."
           
-          if [[ -z "$RELEASE_TAG" || "$RELEASE_TAG" == "null" ]]; then
-            echo "No releases found upstream"
-            echo "should_build=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          # Check if release exists upstream
+          HTTP_CODE=$(curl -sS -o /tmp/release.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${UPSTREAM_REPO}/releases/tags/${TAG}")
+          
+          if [[ "$HTTP_CODE" != "200" ]]; then
+            echo "::error::Version $TAG not found in upstream repository $UPSTREAM_REPO"
+            exit 1
           fi
           
-          echo "Latest upstream release: $RELEASE_TAG"
-          
-          # Check assets exist
-          ASSET_COUNT=$(echo "$RELEASE_JSON" | jq '[.assets[] | select(.name | test("linux.*\\.tar\\.(xz|gz|zst|bz2)$"; "i"))] | length')
-          if [[ "$ASSET_COUNT" -eq 0 ]]; then
-            echo "No Linux tarball assets found in $RELEASE_TAG"
-            echo "should_build=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          
-          # Check if prerelease
-          IS_PRERELEASE=$(echo "$RELEASE_JSON" | jq -r '.prerelease // false')
-          if [[ "$RELEASE_TAG" =~ (alpha|beta|rc|pre|preview|dev) ]]; then
+          # Check if it's a prerelease
+          IS_PRERELEASE=$(jq -r '.prerelease // false' /tmp/release.json)
+          if [[ "$TAG" =~ (alpha|beta|rc|pre|preview|dev) ]]; then
             IS_PRERELEASE="true"
           fi
           
-          # Check if we already have this release
-          HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" \
+          # Check if release exists in our repo
+          OUR_HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}")
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG}")
           
-          if [[ "$HTTP_CODE" == "200" && "$FORCE_BUILD" != "true" ]]; then
-            echo "Release $RELEASE_TAG already exists in our repo. Skipping."
-            echo "should_build=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          if [[ "$OUR_HTTP_CODE" == "200" ]]; then
+            RELEASE_EXISTS="true"
+            echo "Release $TAG already exists in our repository"
+          else
+            RELEASE_EXISTS="false"
+            echo "Release $TAG does not exist yet"
           fi
           
-          # Check creation date - don't build releases older than 2025-01-01
-          CREATED_AT=$(echo "$RELEASE_JSON" | jq -r '.created_at // ""')
-          if [[ -n "$CREATED_AT" && "$CREATED_AT" < "2025-01-01" ]]; then
-            echo "Upstream release is too old: $CREATED_AT"
-            echo "should_build=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          # Check assets
+          ASSET_COUNT=$(jq '[.assets[] | select(.name | test("linux.*\\.tar\\.(xz|gz|zst|bz2)$"; "i"))] | length' /tmp/release.json)
+          if [[ "$ASSET_COUNT" -eq 0 ]]; then
+            echo "::error::No Linux tarball assets found for version $TAG"
+            exit 1
           fi
           
-          echo "New version found: $RELEASE_TAG"
-          echo "should_build=true" >> "$GITHUB_OUTPUT"
-          echo "upstream_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "Version $TAG validated successfully"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
-          echo "new_version=$(echo $RELEASE_TAG | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+          echo "release_exists=$RELEASE_EXISTS" >> "$GITHUB_OUTPUT"
 
   build:
-    needs: check-and-build
-    if: needs.check-and-build.outputs.should_build == 'true'
+    needs: validate
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         arch: [amd64, arm64]
-    outputs:
-      built: ${{ steps.build.outputs.built }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -121,19 +110,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ARCH_OVERRIDE: ${{ matrix.arch }}
-          UPSTREAM_TAG: ${{ needs.check-and-build.outputs.upstream_tag }}
+          UPSTREAM_TAG: ${{ needs.validate.outputs.tag }}
         run: |
           chmod +x tools/*.sh
-          ./tools/build.sh
           
-          if [[ -f "dist/meta.env" ]]; then
-            source dist/meta.env
-            if [[ "$SKIPPED" == "1" ]]; then
-              echo "Build was skipped"
-              echo "built=false" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-          fi
+          # Force build - ignore existing release check
+          export FORCE_BUILD=true
+          
+          ./tools/build.sh
           
           # Verify packages were created
           if ls dist/*.deb 1>/dev/null 2>&1 && ls dist/*.rpm 1>/dev/null 2>&1; then
@@ -160,8 +144,7 @@ jobs:
             dist/release_notes.md
 
   release:
-    needs: [check-and-build, build]
-    if: needs.check-and-build.outputs.should_build == 'true' && needs.build.result == 'success'
+    needs: [validate, build]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -173,49 +156,54 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Delete existing release if requested
+        if: needs.validate.outputs.release_exists == 'true' && github.event.inputs.replace_existing == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ needs.validate.outputs.tag }}"
+          echo "Deleting existing release: $TAG"
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          
+          # Wait a moment for GitHub to process
+          sleep 2
+
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           
+          TAG="${{ needs.validate.outputs.tag }}"
+          IS_PRERELEASE="${{ needs.validate.outputs.is_prerelease }}"
+          
           if [[ ! -f "dist/meta.env" ]]; then
-            echo "No build artifacts found. Skipping release."
-            exit 0
+            echo "No build artifacts found"
+            exit 1
           fi
           
-          source dist/meta.env
-          RELEASE_TITLE=$(cat dist/release_title.txt 2>/dev/null || echo "$UPSTREAM_TAG")
+          RELEASE_TITLE=$(cat dist/release_title.txt 2>/dev/null || echo "$TAG")
           
-          echo "Creating release: $UPSTREAM_TAG"
+          echo "Creating release: $TAG"
           
-          # Delete pre-releases before creating stable release
-          if [[ "${IS_PRERELEASE:-false}" != "true" ]]; then
-            echo "Cleaning up old pre-releases..."
-            PRERELEASES=$(gh release list --limit 100 --json tagName,isPrerelease --jq '.[] | select(.isPrerelease == true) | .tagName' || echo "")
-            if [[ -n "$PRERELEASES" ]]; then
-              echo "$PRERELEASES" | xargs -I {} gh release delete {} --yes --cleanup-tag 2>/dev/null || true
-            fi
-          fi
-          
-          # Create release
-          if [[ "${IS_PRERELEASE:-false}" == "true" ]]; then
-            gh release create "$UPSTREAM_TAG" \
+          if [[ "$IS_PRERELEASE" == "true" ]]; then
+            gh release create "$TAG" \
               --title "$RELEASE_TITLE" \
               --notes-file dist/release_notes.md \
               --prerelease \
               dist/*.deb dist/*.rpm dist/SHA256SUMS
           else
-            gh release create "$UPSTREAM_TAG" \
+            gh release create "$TAG" \
               --title "$RELEASE_TITLE" \
               --notes-file dist/release_notes.md \
               dist/*.deb dist/*.rpm dist/SHA256SUMS
           fi
           
-          echo "Release created successfully: $UPSTREAM_TAG"
+          echo "Release created successfully: $TAG"
 
   deploy-repos:
-    needs: [check-and-build, release]
+    needs: [validate, release]
+    if: github.event.inputs.update_repos == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -226,7 +214,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y dpkg-dev createrepo-c jq
 
-      - name: Download packages from release
+      - name: Download packages from releases
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
