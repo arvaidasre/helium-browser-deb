@@ -66,7 +66,7 @@ validate_packages() {
     if ! dpkg -I "$deb" >/dev/null 2>&1; then
       err "Invalid DEB package: $deb"
     fi
-    ((deb_count++))
+    ((++deb_count))
     local name
     name=$(basename "$deb")
     name=${name,,}
@@ -84,7 +84,7 @@ validate_packages() {
         warn "Could not verify RPM: $rpm"
       fi
     fi
-    ((rpm_count++))
+    ((++rpm_count))
     local name
     name=$(basename "$rpm")
     name=${name,,}
