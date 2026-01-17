@@ -42,63 +42,68 @@ jobs:
           
           echo "Checking upstream repository: $UPSTREAM_REPO"
           
-          # Fetch latest stable release
-          STABLE_JSON=$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${UPSTREAM_REPO}/releases/latest" || echo "{}")
+          # Fetch newest release (stable or prerelease)
+          RELEASES_JSON=$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${UPSTREAM_REPO}/releases" || echo "[]")
           
-          STABLE_TAG=$(echo "$STABLE_JSON" | jq -r '.tag_name // ""')
+          RELEASE_JSON=$(echo "$RELEASES_JSON" | jq 'sort_by(.created_at) | last // {}')
+          RELEASE_TAG=$(echo "$RELEASE_JSON" | jq -r '.tag_name // ""')
           
-          if [[ -z "$STABLE_TAG" || "$STABLE_TAG" == "null" ]]; then
-            echo "No stable release found upstream"
+          if [[ -z "$RELEASE_TAG" || "$RELEASE_TAG" == "null" ]]; then
+            echo "No releases found upstream"
             echo "should_build=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           
-          echo "Latest upstream stable: $STABLE_TAG"
+          echo "Latest upstream release: $RELEASE_TAG"
           
           # Check assets exist
-          ASSET_COUNT=$(echo "$STABLE_JSON" | jq '[.assets[] | select(.name | test("linux.*\\.tar\\.(xz|gz|zst|bz2)$"; "i"))] | length')
+          ASSET_COUNT=$(echo "$RELEASE_JSON" | jq '[.assets[] | select(.name | test("linux.*\\.tar\\.(xz|gz|zst|bz2)$"; "i"))] | length')
           if [[ "$ASSET_COUNT" -eq 0 ]]; then
-            echo "No Linux tarball assets found in $STABLE_TAG"
+            echo "No Linux tarball assets found in $RELEASE_TAG"
             echo "should_build=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           
           # Check if prerelease
-          IS_PRERELEASE=$(echo "$STABLE_JSON" | jq -r '.prerelease // false')
-          if [[ "$STABLE_TAG" =~ (alpha|beta|rc|pre|preview|dev) ]]; then
+          IS_PRERELEASE=$(echo "$RELEASE_JSON" | jq -r '.prerelease // false')
+          if [[ "$RELEASE_TAG" =~ (alpha|beta|rc|pre|preview|dev) ]]; then
             IS_PRERELEASE="true"
           fi
           
           # Check if we already have this release
           HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${STABLE_TAG}")
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}")
           
           if [[ "$HTTP_CODE" == "200" && "$FORCE_BUILD" != "true" ]]; then
-            echo "Release $STABLE_TAG already exists in our repo. Skipping."
+            echo "Release $RELEASE_TAG already exists in our repo. Skipping."
             echo "should_build=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           
           # Check creation date - don't build releases older than 2025-01-01
-          CREATED_AT=$(echo "$STABLE_JSON" | jq -r '.created_at // ""')
+          CREATED_AT=$(echo "$RELEASE_JSON" | jq -r '.created_at // ""')
           if [[ -n "$CREATED_AT" && "$CREATED_AT" < "2025-01-01" ]]; then
             echo "Upstream release is too old: $CREATED_AT"
             echo "should_build=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           
-          echo "New version found: $STABLE_TAG"
+          echo "New version found: $RELEASE_TAG"
           echo "should_build=true" >> "$GITHUB_OUTPUT"
-          echo "upstream_tag=$STABLE_TAG" >> "$GITHUB_OUTPUT"
+          echo "upstream_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
           echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
-          echo "new_version=$(echo $STABLE_TAG | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+          echo "new_version=$(echo $RELEASE_TAG | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
   build:
     needs: check-and-build
     if: needs.check-and-build.outputs.should_build == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
     outputs:
       built: ${{ steps.build.outputs.built }}
     steps:
@@ -115,6 +120,7 @@ jobs:
         id: build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARCH_OVERRIDE: ${{ matrix.arch }}
         run: |
           chmod +x scripts/*.sh
           ./scripts/build.sh
@@ -142,7 +148,7 @@ jobs:
         if: steps.build.outputs.built == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: packages
+          name: packages-${{ matrix.arch }}
           path: |
             dist/*.deb
             dist/*.rpm
@@ -153,7 +159,7 @@ jobs:
 
   release:
     needs: [check-and-build, build]
-    if: needs.build.outputs.built == 'true'
+    if: needs.check-and-build.outputs.should_build == 'true' && needs.build.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -162,8 +168,8 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          name: packages
           path: dist
+          merge-multiple: true
 
       - name: Create GitHub Release
         env:

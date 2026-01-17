@@ -92,7 +92,7 @@ if [[ "$SKIPPED" == "1" ]]; then
 fi
 
 # 3. Get Assets URLs
-ARCH="$(dpkg --print-architecture 2>/dev/null || uname -m)"
+ARCH="${ARCH_OVERRIDE:-$(dpkg --print-architecture 2>/dev/null || uname -m)}"
 case "$ARCH" in
   x86_64|amd64) ASSET_PATTERN="x86_64"; DEB_ARCH="amd64"; RPM_ARCH="x86_64" ;;
   aarch64|arm64) ASSET_PATTERN="arm64"; DEB_ARCH="arm64"; RPM_ARCH="aarch64" ;;
