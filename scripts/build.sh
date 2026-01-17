@@ -10,6 +10,10 @@ OUTDIR="dist"
 log() { echo -e "\033[1;34m[BUILD]\033[0m $*"; }
 err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
 
+curl_retry() {
+  curl -fsSL --retry 5 --retry-delay 2 --retry-connrefused "$@"
+}
+
 check_deps() {
   local deps=(curl jq fpm sha256sum)
   for cmd in "${deps[@]}"; do
@@ -40,7 +44,7 @@ mkdir -p "$OUTDIR"
 # 1. Fetch Upstream Release Info
 log "Fetching latest release info from $UPSTREAM_REPO..."
 API_URL="https://api.github.com/repos/${UPSTREAM_REPO}/releases/latest"
-JSON="$(curl -fsSL "$API_URL")"
+JSON="$(curl_retry "$API_URL")"
 
 TAG="$(jq -r '.tag_name' <<<"$JSON")"
 [[ "$TAG" == "null" || -z "$TAG" ]] && err "Could not determine tag name."
@@ -152,7 +156,7 @@ else
   TARBALL_PATH="$WORKDIR/helium.tar.$EXT"
 fi
 
-curl -fsSL "$TARBALL_URL" -o "$TARBALL_PATH"
+curl_retry "$TARBALL_URL" -o "$TARBALL_PATH"
 tar -xf "$TARBALL_PATH" -C "$WORKDIR"
 
 # Locate extracted directory

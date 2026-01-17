@@ -22,7 +22,7 @@ env:
 
 jobs:
   check-and-build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     outputs:
       new_version: ${{ steps.check.outputs.new_version }}
       upstream_tag: ${{ steps.check.outputs.upstream_tag }}
@@ -31,6 +31,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install check dependencies
+        run: |
+          if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y curl jq git
+          elif command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y curl jq git
+          else
+            echo "Unsupported OS package manager"
+            exit 1
+          fi
 
       - name: Check for new upstream releases
         id: check
@@ -96,10 +108,18 @@ jobs:
           echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
           echo "new_version=$(echo $RELEASE_TAG | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
+      - name: Sync upstream metadata
+        if: steps.check.outputs.should_build == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          chmod +x scripts/*.sh
+          ./scripts/sync-upstream.sh
+
   build:
     needs: check-and-build
     if: needs.check-and-build.outputs.should_build == 'true'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     strategy:
       fail-fast: false
       matrix:
@@ -110,23 +130,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Build container image
         run: |
-          sudo apt-get update
-          sudo apt-get install -y jq dpkg-dev curl apt-utils ruby ruby-dev build-essential rpm createrepo-c
-          sudo gem install fpm
+          docker build -t helium-builder:latest .
 
-      - name: Build packages
+      - name: Build packages in Docker
         id: build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ARCH_OVERRIDE: ${{ matrix.arch }}
+          ARCHES: "${{ matrix.arch }}"
         run: |
           chmod +x scripts/*.sh
-          ./scripts/build.sh
+          docker run --rm \
+            -e ARCHES \
+            -v "$PWD:/work" \
+            helium-builder:latest \
+            ./scripts/docker-build.sh
           
-          if [[ -f "dist/meta.env" ]]; then
-            source dist/meta.env
+          if [[ -f "dist/${{ matrix.arch }}/meta.env" ]]; then
+            source "dist/${{ matrix.arch }}/meta.env"
             if [[ "$SKIPPED" == "1" ]]; then
               echo "Build was skipped"
               echo "built=false" >> "$GITHUB_OUTPUT"
@@ -135,7 +157,7 @@ jobs:
           fi
           
           # Verify packages were created
-          if ls dist/*.deb 1>/dev/null 2>&1 && ls dist/*.rpm 1>/dev/null 2>&1; then
+          if ls "dist/${{ matrix.arch }}"/*.deb 1>/dev/null 2>&1 && ls "dist/${{ matrix.arch }}"/*.rpm 1>/dev/null 2>&1; then
             echo "Packages built successfully"
             echo "built=true" >> "$GITHUB_OUTPUT"
           else
@@ -150,26 +172,46 @@ jobs:
         with:
           name: packages-${{ matrix.arch }}
           path: |
-            dist/*.deb
-            dist/*.rpm
-            dist/SHA256SUMS
-            dist/meta.env
-            dist/release_title.txt
-            dist/release_notes.md
+            dist/${{ matrix.arch }}/*.deb
+            dist/${{ matrix.arch }}/*.rpm
+            dist/${{ matrix.arch }}/SHA256SUMS
+            dist/${{ matrix.arch }}/meta.env
+            dist/${{ matrix.arch }}/release_title.txt
+            dist/${{ matrix.arch }}/release_notes.md
 
   release:
     needs: [check-and-build, build]
     if: needs.check-and-build.outputs.should_build == 'true' && needs.build.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install GitHub CLI
+        run: |
+          if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y gh
+          elif command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y gh
+          else
+            echo "Unsupported OS package manager"
+            exit 1
+          fi
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
+
+      - name: Flatten artifacts
+        run: |
+          for arch in amd64 arm64; do
+            if [[ -d "dist/$arch" ]]; then
+              mv dist/$arch/* dist/ 2>/dev/null || true
+            fi
+          done
 
       - name: Create GitHub Release
         env:
@@ -214,15 +256,38 @@ jobs:
 
   deploy-repos:
     needs: [check-and-build, release]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Build container image
         run: |
-          sudo apt-get update
-          sudo apt-get install -y dpkg-dev createrepo-c
+          docker build -t helium-builder:latest .
+
+      - name: Prepare repo build tools
+        run: |
+          if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y dpkg-dev createrepo-c
+          elif command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y dpkg-dev createrepo_c
+          else
+            echo "Unsupported OS package manager"
+            exit 1
+          fi
+
+      - name: Install GitHub CLI
+        run: |
+          if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y gh
+          elif command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y gh
+          else
+            echo "Unsupported OS package manager"
+            exit 1
+          fi
 
       - name: Download packages from release
         env:
