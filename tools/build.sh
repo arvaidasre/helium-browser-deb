@@ -192,16 +192,9 @@ fi
 # Initial Preferences (Homepage & Startup)
 cat >"$OFFLINE_ROOT/opt/helium/initial_preferences" <<EOF
 {
-  "homepage": "https://www.google.com",
-  "homepage_is_newtabpage": false,
+  "homepage_is_newtabpage": true,
   "browser": {
     "show_home_button": true
-  },
-  "session": {
-    "restore_on_startup": 4,
-    "startup_urls": [
-      "https://www.google.com"
-    ]
   }
 }
 EOF
