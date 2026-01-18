@@ -132,6 +132,7 @@ This repository is **fully automated**. No manual intervention required.
 | **Auto Build** | [![Build](https://github.com/arvaidasre/helium-browser-deb/actions/workflows/auto-build.yml/badge.svg)](https://github.com/arvaidasre/helium-browser-deb/actions/workflows/auto-build.yml) |
 | **Healthcheck** | [![Health](https://github.com/arvaidasre/helium-browser-deb/actions/workflows/healthcheck.yml/badge.svg)](https://github.com/arvaidasre/helium-browser-deb/actions/workflows/healthcheck.yml) |
 
+- **Repository**: [arvaidasre/helium-browser-deb](https://github.com/arvaidasre/helium-browser-deb)
 - **Automation**: ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=github-actions&logoColor=white)
 - **Upstream**: [imputnet/helium-linux](https://github.com/imputnet/helium-linux)
 
