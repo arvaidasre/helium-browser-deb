@@ -102,8 +102,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [amd64, arm64]
-    if: ${{ github.event.inputs.arch == 'all' || github.event.inputs.arch == matrix.arch }}
+        arch: ${{ fromJson(github.event.inputs.arch == 'all' && '["amd64","arm64"]' || format('["{0}"]', github.event.inputs.arch)) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
