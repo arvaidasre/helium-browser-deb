@@ -103,7 +103,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [amd64, arm64]
-    if: github.event.inputs.arch == 'all' || github.event.inputs.arch == matrix.arch
+    if: ${{ github.event.inputs.arch == 'all' || github.event.inputs.arch == matrix.arch }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
