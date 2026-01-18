@@ -215,7 +215,7 @@ export LD_LIBRARY_PATH="/opt/helium\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
 
 # Custom flags (add your chrome://flags overrides here)
 # Example: EXTRA_FLAGS="--force-dark-mode --enable-features=VaapiVideoDecoder"
-EXTRA_FLAGS="--custom-ntp=https://www.google.com"
+EXTRA_FLAGS=""
 
 exec /opt/helium/$BIN_NAME \$EXTRA_FLAGS "\$@"
 EOF
