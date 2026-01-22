@@ -22,7 +22,7 @@ env:
 
 jobs:
   check-and-build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       new_version: ${{ steps.check.outputs.new_version }}
       upstream_tag: ${{ steps.check.outputs.upstream_tag }}
