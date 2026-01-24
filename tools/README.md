@@ -14,6 +14,7 @@ This folder contains the automation scripts used by CI workflows.
 | Script | Purpose |
 | --- | --- |
 | `build-and-publish.sh` | End-to-end build + release + Pages publish. |
+| `build-common.sh` | Shared build helpers used by build scripts (not intended to run directly). |
 | `build-prerelease.sh` | Build prerelease artifacts. |
 | `build.sh` | Build packages and site output. |
 | `check-upstream.sh` | Detect upstream Helium Browser releases. |
