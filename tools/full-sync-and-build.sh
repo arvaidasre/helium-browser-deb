@@ -9,7 +9,26 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 log() { echo -e "\033[1;34m[FULL-SYNC]\033[0m $*"; }
 err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
 
+check_deps() {
+  local deps=(bash)
+  for cmd in "${deps[@]}"; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+      err "Missing dependency: $cmd"
+    fi
+  done
+  
+  # Check if required scripts exist
+  local scripts=(sync-upstream.sh build.sh publish-release.sh validate-repos.sh)
+  for script in "${scripts[@]}"; do
+    if [[ ! -f "$SCRIPT_DIR/$script" ]]; then
+      err "Missing required script: $script"
+    fi
+  done
+}
+
 # --- Main ---
+
+check_deps
 
 log "Starting full sync and build pipeline..."
 log ""

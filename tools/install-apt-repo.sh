@@ -6,9 +6,13 @@ LIST_FILE="/etc/apt/sources.list.d/helium-browser.list"
 ARCH="amd64,arm64"
 COMPONENT="main"
 
+# --- Helper Functions ---
+log() { echo -e "\033[1;34m[INSTALL]\033[0m $*"; }
+err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
+warn() { echo -e "\033[1;33m[WARN]\033[0m $*"; }
+
 die() {
-  echo "[helium] ERROR: $*" >&2
-  exit 1
+  err "$*"
 }
 
 need_root() {
@@ -45,7 +49,7 @@ CODENAME="$(detect_codename)"
 case "$CODENAME" in
   noble|jammy|focal|bookworm|bullseye|stable) ;;  # known/published
   *)
-    echo "[helium] Unknown codename '$CODENAME' -> using 'stable'" >&2
+    warn "Unknown codename '$CODENAME' -> using 'stable'"
     CODENAME="stable"
     ;;
 esac
@@ -55,5 +59,5 @@ cat >"$LIST_FILE" <<EOF
 deb [arch=$ARCH trusted=yes] $REPO_URL $CODENAME $COMPONENT
 EOF
 
-echo "[helium] Wrote: $LIST_FILE"
-echo "[helium] Entry: deb [arch=$ARCH trusted=yes] $REPO_URL $CODENAME $COMPONENT"
+log "Wrote: $LIST_FILE"
+log "Entry: deb [arch=$ARCH trusted=yes] $REPO_URL $CODENAME $COMPONENT"
