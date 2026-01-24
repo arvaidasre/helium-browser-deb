@@ -9,7 +9,18 @@ GITHUB_API="https://api.github.com/repos/$UPSTREAM_REPO"
 log() { echo -e "\033[1;34m[CHECK]\033[0m $*"; }
 err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
 
+check_deps() {
+  local deps=(curl jq)
+  for cmd in "${deps[@]}"; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+      err "Missing dependency: $cmd"
+    fi
+  done
+}
+
 # --- Main ---
+
+check_deps
 
 log "Checking upstream repository: $UPSTREAM_REPO"
 log ""
