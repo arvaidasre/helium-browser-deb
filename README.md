@@ -44,6 +44,15 @@ Visit our **[Web Page](https://arvaidasre.github.io/helium-browser-deb/)** for d
 - `tools/`: build + publish scripts
 - `site/`: public web assets and install scripts
 - `site/public/`: generated APT/RPM repo + Pages artifacts (generated in CI)
+- `docs/`: contributor-facing documentation
+
+### Repository Organization
+
+If you are contributing or maintaining the automation, start here:
+
+- [`docs/REPO_LAYOUT.md`](docs/REPO_LAYOUT.md) for a full layout overview
+- [`tools/README.md`](tools/README.md) for script descriptions
+- [`site/README.md`](site/README.md) for Pages content notes
 
 </details>
 
@@ -75,6 +84,13 @@ Apsilankykite **[interneto svetaineje](https://arvaidasre.github.io/helium-brows
 - `tools/`: build + publish skriptai
 - `site/`: public assets ir install skriptai
 - `site/public/`: generuojamas APT/RPM repo (CI)
+- `docs/`: dokumentacija prisidedantiems
+
+### Repo organizavimas
+
+- [`docs/REPO_LAYOUT.md`](docs/REPO_LAYOUT.md) apraso pilna struktura
+- [`tools/README.md`](tools/README.md) skriptu aprasai
+- [`site/README.md`](site/README.md) Pages turinys
 
 </details>
 
@@ -106,6 +122,13 @@ curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
 - `tools/`: scripts for build + publish
 - `site/`: public assets and install scripts
 - `site/public/`: generated APT/RPM repo (CI)
+- `docs/`: contributor documentation
+
+### Организация репозитория
+
+- [`docs/REPO_LAYOUT.md`](docs/REPO_LAYOUT.md) — обзор структуры
+- [`tools/README.md`](tools/README.md) — описание скриптов
+- [`site/README.md`](site/README.md) — заметки по Pages
 
 </details>
 
