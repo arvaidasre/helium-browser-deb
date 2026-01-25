@@ -215,11 +215,28 @@ StartupNotify=true
 Icon=helium
 EOF
 
+  package_deb "$offline_root" "$outdir"
+  package_rpm "$offline_root" "$outdir"
+
+  if [[ -f "$outdir/meta.env" ]]; then
+     # shellcheck disable=SC1090
+     source "$outdir/meta.env"
+     if [[ -n "${FULL_DEB_FILENAME:-}" && -n "${FULL_RPM_FILENAME:-}" ]]; then
+        (cd "$outdir" && sha256sum "$FULL_DEB_FILENAME" "$FULL_RPM_FILENAME" > SHA256SUMS)
+     fi
+  fi
+  log "Done."
+}
+
+package_deb() {
+  local offline_root="$1"
+  local outdir="$2"
   local full_deb_name="${PACKAGE_NAME}_${VERSION}_${DEB_ARCH}.deb"
+
   fpm -s dir -t deb \
     -n "$PACKAGE_NAME" \
     -v "$VERSION" \
-    --after-install "$(dirname "$0")/postinst.sh" \
+    --after-install "$(dirname "${BASH_SOURCE[0]}")/resources/postinst.sh" \
     -a "$DEB_ARCH" \
     -m "Helium Packager <noreply@github.com>" \
     --url "https://github.com/$UPSTREAM_REPO" \
@@ -240,12 +257,18 @@ EOF
     -C "$offline_root" .
 
   log "Built: $outdir/$full_deb_name"
+  echo "FULL_DEB_FILENAME=$full_deb_name" >> "$outdir/meta.env"
+}
 
+package_rpm() {
+  local offline_root="$1"
+  local outdir="$2"
   local full_rpm_name="${PACKAGE_NAME}-${VERSION}-${RPM_ARCH}.rpm"
+
   fpm -s dir -t rpm \
     -n "$PACKAGE_NAME" \
     -v "$VERSION" \
-    --after-install "$(dirname "$0")/postinst.sh" \
+    --after-install "$(dirname "${BASH_SOURCE[0]}")/resources/postinst.sh" \
     -a "$RPM_ARCH" \
     -m "Helium Packager <noreply@github.com>" \
     --url "https://github.com/$UPSTREAM_REPO" \
@@ -267,10 +290,5 @@ EOF
     -C "$offline_root" .
 
   log "Built: $outdir/$full_rpm_name"
-
-  echo "FULL_DEB_FILENAME=$full_deb_name" >> "$outdir/meta.env"
   echo "FULL_RPM_FILENAME=$full_rpm_name" >> "$outdir/meta.env"
-
-  (cd "$outdir" && sha256sum "$full_deb_name" "$full_rpm_name" > SHA256SUMS)
-  log "Done."
 }

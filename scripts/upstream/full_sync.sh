@@ -3,7 +3,7 @@ set -euo pipefail
 
 # --- Configuration ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # --- Helper Functions ---
 log() { echo -e "\033[1;34m[FULL-SYNC]\033[0m $*"; }
@@ -18,9 +18,9 @@ check_deps() {
   done
   
   # Check if required scripts exist
-  local scripts=(sync-upstream.sh build.sh publish-release.sh validate-repos.sh)
+  local scripts=("$SCRIPT_DIR/sync.sh" "$SCRIPT_DIR/../build/build.sh" "$SCRIPT_DIR/../publish/publish.sh" "$SCRIPT_DIR/../utils/validate.sh")
   for script in "${scripts[@]}"; do
-    if [[ ! -f "$SCRIPT_DIR/$script" ]]; then
+    if [[ ! -f "$script" ]]; then
       err "Missing required script: $script"
     fi
   done
@@ -35,22 +35,22 @@ log ""
 
 # Step 1: Sync upstream releases
 log "Step 1/4: Syncing upstream releases..."
-bash "$SCRIPT_DIR/sync-upstream.sh" || err "Upstream sync failed"
+bash "$SCRIPT_DIR/sync.sh" || err "Upstream sync failed"
 log ""
 
 # Step 2: Build packages
 log "Step 2/4: Building packages..."
-bash "$SCRIPT_DIR/build.sh" || err "Build failed"
+bash "$SCRIPT_DIR/../build/build.sh" || err "Build failed"
 log ""
 
 # Step 3: Publish to repositories
 log "Step 3/4: Publishing to repositories..."
-bash "$SCRIPT_DIR/publish-release.sh" || err "Publishing failed"
+bash "$SCRIPT_DIR/../publish/publish.sh" || err "Publishing failed"
 log ""
 
 # Step 4: Validate everything
 log "Step 4/4: Validating repositories..."
-bash "$SCRIPT_DIR/validate-repos.sh" || err "Validation failed"
+bash "$SCRIPT_DIR/../utils/validate.sh" || err "Validation failed"
 log ""
 
 log "Full sync and build pipeline completed successfully!"

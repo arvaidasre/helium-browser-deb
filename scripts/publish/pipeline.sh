@@ -3,7 +3,7 @@ set -euo pipefail
 
 # --- Configuration ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # --- Helper Functions ---
 log() { echo -e "\033[1;34m[BUILD-PUBLISH]\033[0m $*"; }
@@ -15,8 +15,8 @@ log "Starting build and publish pipeline..."
 
 # Step 1: Build packages
 log "Step 1/3: Building packages..."
-if [[ -f "$SCRIPT_DIR/build.sh" ]]; then
-  bash "$SCRIPT_DIR/build.sh" || err "Build failed"
+if [[ -f "$PROJECT_ROOT/scripts/build/build.sh" ]]; then
+  bash "$PROJECT_ROOT/scripts/build/build.sh" || err "Build failed"
 else
   err "build.sh not found"
 fi
@@ -29,7 +29,7 @@ fi
 
 # Step 3: Publish to repositories
 log "Step 3/3: Publishing to repositories..."
-bash "$SCRIPT_DIR/publish-release.sh" || err "Publishing failed"
+bash "$SCRIPT_DIR/publish.sh" || err "Publishing failed"
 
 log "Build and publish pipeline completed successfully!"
 log ""

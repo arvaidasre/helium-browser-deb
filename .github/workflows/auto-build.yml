@@ -123,8 +123,8 @@ jobs:
           ARCH_OVERRIDE: ${{ matrix.arch }}
           UPSTREAM_TAG: ${{ needs.check-and-build.outputs.upstream_tag }}
         run: |
-          chmod +x tools/*.sh
-          ./tools/build.sh
+          chmod +x scripts/*/*.sh
+          ./scripts/build/build.sh
           
           if [[ -f "dist/meta.env" ]]; then
             source dist/meta.env
@@ -263,8 +263,8 @@ jobs:
 
       - name: Build and publish repositories
         run: |
-          chmod +x tools/*.sh
-          ./tools/publish-release.sh
+          chmod +x scripts/*/*.sh
+          ./scripts/publish/publish.sh
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
