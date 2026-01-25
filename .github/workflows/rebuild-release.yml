@@ -120,12 +120,12 @@ jobs:
           ARCH_OVERRIDE: ${{ matrix.arch }}
           UPSTREAM_TAG: ${{ needs.validate.outputs.tag }}
         run: |
-          chmod +x tools/*.sh
+          chmod +x scripts/*/*.sh
           
           # Force build - ignore existing release check
           export FORCE_BUILD=true
           
-          ./tools/build.sh
+          ./scripts/build/build.sh
           
           # Verify packages were created
           if ls dist/*.deb 1>/dev/null 2>&1 && ls dist/*.rpm 1>/dev/null 2>&1; then
@@ -259,8 +259,8 @@ jobs:
 
       - name: Build and publish repositories
         run: |
-          chmod +x tools/*.sh
-          ./tools/publish-release.sh
+          chmod +x scripts/*/*.sh
+          ./scripts/publish/publish.sh
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

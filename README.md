@@ -41,7 +41,7 @@ Visit our **[Web Page](https://arvaidasre.github.io/helium-browser-deb/)** for d
 
 ### Repository Layout
 
-- `tools/`: build + publish scripts
+- `scripts/`: build + publish scripts
 - `site/`: public web assets and install scripts
 - `site/public/`: generated APT/RPM repo + Pages artifacts (generated in CI)
 - `docs/`: contributor-facing documentation
@@ -51,7 +51,7 @@ Visit our **[Web Page](https://arvaidasre.github.io/helium-browser-deb/)** for d
 If you are contributing or maintaining the automation, start here:
 
 - [`docs/REPO_LAYOUT.md`](docs/REPO_LAYOUT.md) for a full layout overview
-- [`tools/README.md`](tools/README.md) for script descriptions
+- [`scripts/README.md`](scripts/README.md) for script descriptions
 - [`site/README.md`](site/README.md) for Pages content notes
 
 </details>
@@ -81,7 +81,7 @@ Apsilankykite **[interneto svetaineje](https://arvaidasre.github.io/helium-brows
 
 ### Repo struktura
 
-- `tools/`: build + publish skriptai
+- `scripts/`: build + publish skriptai
 - `site/`: public assets ir install skriptai
 - `site/public/`: generuojamas APT/RPM repo (CI)
 - `docs/`: dokumentacija prisidedantiems
@@ -89,7 +89,7 @@ Apsilankykite **[interneto svetaineje](https://arvaidasre.github.io/helium-brows
 ### Repo organizavimas
 
 - [`docs/REPO_LAYOUT.md`](docs/REPO_LAYOUT.md) apraso pilna struktura
-- [`tools/README.md`](tools/README.md) skriptu aprasai
+- [`scripts/README.md`](scripts/README.md) skriptu aprasai
 - [`site/README.md`](site/README.md) Pages turinys
 
 </details>
@@ -119,7 +119,7 @@ curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
 
 ### Структура репозитория
 
-- `tools/`: scripts for build + publish
+- `scripts/`: scripts for build + publish
 - `site/`: public assets and install scripts
 - `site/public/`: generated APT/RPM repo (CI)
 - `docs/`: contributor documentation
@@ -127,7 +127,7 @@ curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash
 ### Организация репозитория
 
 - [`docs/REPO_LAYOUT.md`](docs/REPO_LAYOUT.md) — обзор структуры
-- [`tools/README.md`](tools/README.md) — описание скриптов
+- [`scripts/README.md`](scripts/README.md) — описание скриптов
 - [`site/README.md`](site/README.md) — заметки по Pages
 
 </details>

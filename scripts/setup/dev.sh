@@ -3,7 +3,7 @@ set -euo pipefail
 
 # --- Configuration ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # --- Helper Functions ---
 log() { echo -e "\033[1;34m[SETUP]\033[0m $*"; }
@@ -82,18 +82,18 @@ mkdir -p "$PROJECT_ROOT/.backups"
 
 log ""
 log "Making scripts executable..."
-chmod +x "$SCRIPT_DIR"/*.sh
+chmod +x "$PROJECT_ROOT"/scripts/*/*.sh
 
 log ""
 log "Setup completed successfully!"
 log ""
 log "Next steps:"
 log "  1. Review RELEASE_PROCESS.md for detailed documentation"
-log "  2. Run: bash tools/full-sync-and-build.sh"
+log "  2. Run: bash scripts/upstream/full_sync.sh"
 log "  3. Or run individual steps:"
-log "     - bash tools/sync-upstream.sh"
-log "     - bash tools/build.sh"
-log "     - bash tools/publish-release.sh"
+log "     - bash scripts/upstream/sync.sh"
+log "     - bash scripts/build/build.sh"
+log "     - bash scripts/publish/publish.sh"
 log ""
 log "For more information, see:"
 log "  - RELEASE_PROCESS.md - Complete release process documentation"

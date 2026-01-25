@@ -4,7 +4,7 @@ set -euo pipefail
 # --- Configuration ---
 PACKAGE_NAME="helium-browser"
 DIST_DIR="${DIST_DIR:-dist}"
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 REPO_DIR="${REPO_DIR:-$PROJECT_ROOT/site/public}"
 STAGING_DIR="${STAGING_DIR:-$PROJECT_ROOT/site/public.tmp}"
 CURRENT_DIR="${CURRENT_DIR:-$PROJECT_ROOT/site/public.current}"
@@ -372,7 +372,7 @@ cp "$PROJECT_ROOT/site/index.html.template" "$STAGING_DIR/index.html"
 
 generate_manifest
 
-"$PROJECT_ROOT/tools/validate-repos.sh" "$APT_REPO_DIR" "$RPM_REPO_DIR" "$STAGING_DIR"
+"$PROJECT_ROOT/scripts/utils/validate.sh" "$APT_REPO_DIR" "$RPM_REPO_DIR" "$STAGING_DIR"
 
 rm -rf "$CURRENT_DIR"
 if [[ -d "$REPO_DIR" ]]; then

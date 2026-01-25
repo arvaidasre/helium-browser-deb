@@ -7,7 +7,7 @@ UPSTREAM_REPO="imputnet/helium-linux"
 OUTDIR="dist"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/build-common.sh"
+source "$SCRIPT_DIR/common.sh"
 
 # --- Main Logic ---
 
