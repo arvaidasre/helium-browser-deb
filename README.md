@@ -142,7 +142,8 @@ This repository is **fully automated**. No manual intervention required.
 
 | Workflow | Schedule | Purpose |
 |----------|----------|---------|
-| **Auto Build** | Every 3 hours | Checks upstream for new releases, builds packages, creates GitHub release, deploys to Pages |
+| **Watch Upstream** | Every 5 minutes | Detects new upstream releases immediately and triggers build |
+| **Auto Build** | Every hour | Backup check + builds packages, creates GitHub release, deploys to Pages |
 | **Healthcheck** | Every hour | Monitors repository endpoints, triggers rebuild if broken |
 | **Cleanup** | Weekly (Sunday) | Removes old releases, keeps last 5 stable |
 

@@ -1,0 +1,83 @@
+name: Watch Upstream Releases
+
+# Tikrina kas 5 minutes ar yra nauja upstream versija ir triggerina build nedelsiant
+on:
+  schedule:
+    # Kas 5 minutes - greitas reagavimas i naujas upstream versijas
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check-and-trigger:
+    runs-on: ubuntu-slim
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Check upstream for new releases
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPSTREAM_REPO: imputnet/helium-linux
+        run: |
+          set -euo pipefail
+          
+          echo "Checking upstream: $UPSTREAM_REPO"
+          
+          # Gaunam paskutinę upstream versiją
+          UPSTREAM_JSON=$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${UPSTREAM_REPO}/releases/latest" 2>/dev/null || echo '{}')
+          
+          UPSTREAM_TAG=$(echo "$UPSTREAM_JSON" | jq -r '.tag_name // ""')
+          
+          if [[ -z "$UPSTREAM_TAG" || "$UPSTREAM_TAG" == "null" ]]; then
+            echo "No upstream release found"
+            echo "trigger=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          echo "Latest upstream version: $UPSTREAM_TAG"
+          
+          # Patikrinam ar upstream turi Linux asset'ų
+          ASSET_COUNT=$(echo "$UPSTREAM_JSON" | jq '[.assets[] | select(.name | test("linux.*\\.tar\\.(xz|gz|zst|bz2)$"; "i"))] | length')
+          if [[ "$ASSET_COUNT" -eq 0 ]]; then
+            echo "No Linux tarball assets found upstream"
+            echo "trigger=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          # Gaunam mūsų paskutinę versiją
+          OUR_JSON=$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest" 2>/dev/null || echo '{}')
+          
+          OUR_TAG=$(echo "$OUR_JSON" | jq -r '.tag_name // ""')
+          
+          echo "Our latest version: ${OUR_TAG:-'(none)'}"
+          
+          # Palyginam versijas
+          if [[ "$UPSTREAM_TAG" == "$OUR_TAG" ]]; then
+            echo "Already up to date ($UPSTREAM_TAG)"
+            echo "trigger=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          
+          # Nauja versija rasta!
+          echo "🎉 New upstream version detected: $UPSTREAM_TAG (we have: ${OUR_TAG:-none})"
+          echo "trigger=true" >> "$GITHUB_OUTPUT"
+          echo "new_version=$UPSTREAM_TAG" >> "$GITHUB_OUTPUT"
+      
+      - name: Trigger auto-build workflow
+        if: steps.check.outputs.trigger == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VERSION: ${{ steps.check.outputs.new_version }}
+        run: |
+          echo "Triggering build for new version: $NEW_VERSION"
+          
+          curl -fsSL -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/auto-build.yml/dispatches" \
+            -d '{"ref":"main","inputs":{"force_build":"false"}}'
+          
+          echo "✅ Build triggered successfully!"

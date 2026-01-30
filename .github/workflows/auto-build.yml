@@ -1,7 +1,10 @@
 name: Auto Build and Release
 
-# Automatiskai tikrina upstream kiekvienas 3 valandas ir buildo nauja versija jei yra
+# Automatiskai tikrina upstream kas valanda ir buildo nauja versija jei yra
+# Galima iskviesti ir per repository_dispatch webhook kai upstream isleidzia nauja versija
 on:
+  repository_dispatch:
+    types: [upstream-release]
   workflow_dispatch:
     inputs:
       force_build:
@@ -9,8 +12,8 @@ on:
         type: boolean
         default: false
   schedule:
-    # Kas 3 valandas - 0:00, 3:00, 6:00, 9:00, 12:00, 15:00, 18:00, 21:00 UTC
-    - cron: '0 */3 * * *'
+    # Kas 1 valanda - tikrinam dazniau del greitesnio reagavimo i naujas versijas
+    - cron: '0 * * * *'
 
 permissions:
   contents: write
