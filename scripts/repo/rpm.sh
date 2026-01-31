@@ -50,30 +50,21 @@ fi
 # Generate repository metadata
 cd "$REPO_DIR"
 
-# For x86_64 - always generate metadata, even if empty
-if [[ -n "$(ls -A x86_64/*.rpm 2>/dev/null)" ]]; then
-  log "Generating repository metadata for x86_64..."
-  if command -v createrepo_c >/dev/null 2>&1; then
-    createrepo_c --update x86_64 || createrepo_c x86_64
+# Generate repository metadata
+for arch in x86_64 aarch64; do
+  if [[ -n "$(ls -A "$arch"/*.rpm 2>/dev/null)" ]]; then
+    log "Generating repository metadata for $arch..."
+    if command -v createrepo_c >/dev/null 2>&1; then
+      createrepo_c --update "$arch" || createrepo_c "$arch"
+    elif command -v createrepo >/dev/null 2>&1; then
+      createrepo --update "$arch" || createrepo "$arch"
+    else
+      err "Neither createrepo_c nor createrepo found."
+    fi
   else
-    createrepo --update x86_64 || createrepo x86_64
+    err "No RPM packages found for $arch in $REPO_DIR/$arch. Aborting to avoid empty repo."
   fi
-else
-  log "No x86_64 packages found, creating empty repository metadata"
-  err "No x86_64 RPM packages found in dist/. Aborting to avoid empty repo."
-fi
-
-# For aarch64 - require packages
-if [[ -n "$(ls -A aarch64/*.rpm 2>/dev/null)" ]]; then
-  log "Generating repository metadata for aarch64..."
-  if command -v createrepo_c >/dev/null 2>&1; then
-    createrepo_c --update aarch64 || createrepo_c aarch64
-  else
-    createrepo --update aarch64 || createrepo aarch64
-  fi
-else
-  err "No aarch64 RPM packages found in dist/. Aborting to avoid empty repo."
-fi
+done
 
 log "RPM repository generated successfully!"
 log "Repository location: $REPO_DIR"

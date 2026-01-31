@@ -164,6 +164,14 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Merge checksums
+        run: |
+          if ls dist/SHA256SUMS-* 1>/dev/null 2>&1; then
+            cat dist/SHA256SUMS-* > dist/SHA256SUMS
+            rm dist/SHA256SUMS-*
+            echo "Merged checksums into dist/SHA256SUMS"
+          fi
+
       - name: Delete existing release if requested
         if: needs.validate.outputs.release_exists == 'true' && github.event.inputs.replace_existing == 'true'
         env:
