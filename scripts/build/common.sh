@@ -174,14 +174,25 @@ build_offline_packages() {
   cp -a "$extracted_dir/"* "$offline_root/opt/helium/"
   chmod -R u+w "$offline_root/opt/helium"
 
-  local bin_name
-  if [[ -f "$offline_root/opt/helium/helium" ]]; then
-    bin_name="helium"
-  elif [[ -f "$offline_root/opt/helium/chrome" ]]; then
-    bin_name="chrome"
-  else
-    bin_name="helium"
-    log "Warning: Could not detect binary name, defaulting to helium."
+  local bin_name=""
+  # Try to detect the main binary
+  for b in helium chrome google-chrome chromium; do
+    if [[ -f "$offline_root/opt/helium/$b" ]]; then
+      bin_name="$b"
+      log "Detected binary: $bin_name"
+      break
+    fi
+  done
+
+  if [[ -z "$bin_name" ]]; then
+    # Fallback to searching for any executable
+    bin_name=$(find "$offline_root/opt/helium" -maxdepth 1 -executable -type f -printf "%f\n" | head -n 1)
+    if [[ -z "$bin_name" ]]; then
+      bin_name="helium"
+      log "Warning: Could not detect binary name, defaulting to helium."
+    else
+      log "Detected binary (fallback): $bin_name"
+    fi
   fi
 
   if [[ -f "$offline_root/opt/helium/helium.png" ]]; then
@@ -222,7 +233,9 @@ EOF
      # shellcheck disable=SC1090
      source "$outdir/meta.env"
      if [[ -n "${FULL_DEB_FILENAME:-}" && -n "${FULL_RPM_FILENAME:-}" ]]; then
-        (cd "$outdir" && sha256sum "$FULL_DEB_FILENAME" "$FULL_RPM_FILENAME" > SHA256SUMS)
+        local sum_file="SHA256SUMS-${ARCH:-unknown}"
+        log "Generating checksums: $sum_file"
+        (cd "$outdir" && sha256sum "$FULL_DEB_FILENAME" "$FULL_RPM_FILENAME" > "$sum_file")
      fi
   fi
   log "Done."

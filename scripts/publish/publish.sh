@@ -172,18 +172,22 @@ publish_apt() {
   # Generate Packages files
   cd "$APT_REPO_DIR"
   
-  if compgen -G "pool/main/*amd64*.deb" >/dev/null || compgen -G "pool/main/*x86_64*.deb" >/dev/null; then
-    dpkg-scanpackages --arch amd64 pool/main > dists/stable/main/binary-amd64/Packages 2>/dev/null || err "Failed to generate amd64 Packages"
+  log "Generating Packages files (with architecture filtering)..."
+
+  # For amd64
+  dpkg-scanpackages pool/main 2>/dev/null | awk -v RS='' -v ORS='\n\n' '/Architecture: (amd64|x86_64)/' > dists/stable/main/binary-amd64/Packages
+  if [[ -s dists/stable/main/binary-amd64/Packages ]]; then
     gzip -k -f dists/stable/main/binary-amd64/Packages 2>/dev/null || err "Failed to gzip amd64 Packages"
   else
-    err "No amd64 packages available for APT"
+    err "No amd64 packages found in pool/main"
   fi
   
-  if compgen -G "pool/main/*arm64*.deb" >/dev/null || compgen -G "pool/main/*aarch64*.deb" >/dev/null; then
-    dpkg-scanpackages --arch arm64 pool/main > dists/stable/main/binary-arm64/Packages 2>/dev/null || err "Failed to generate arm64 Packages"
+  # For arm64
+  dpkg-scanpackages pool/main 2>/dev/null | awk -v RS='' -v ORS='\n\n' '/Architecture: (arm64|aarch64)/' > dists/stable/main/binary-arm64/Packages
+  if [[ -s dists/stable/main/binary-arm64/Packages ]]; then
     gzip -k -f dists/stable/main/binary-arm64/Packages 2>/dev/null || err "Failed to gzip arm64 Packages"
   else
-    err "No arm64 packages available for APT"
+    err "No arm64 packages found in pool/main"
   fi
   
   # Generate Release file

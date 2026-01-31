@@ -66,24 +66,24 @@ if ! ls -A "$REPO_DIR/pool/main"/*arm64*.deb >/dev/null 2>&1 && ! ls -A "$REPO_D
 fi
 
 # Generate Packages files
-log "Generating Packages files..."
+log "Generating Packages files (with architecture filtering)..."
 cd "$REPO_DIR"
 
 # For amd64
-if [[ -n "$(ls -A pool/main/*.deb 2>/dev/null)" ]]; then
-  dpkg-scanpackages --arch amd64 pool/main > "dists/stable/main/binary-amd64/Packages" 2>/dev/null || err "Failed to generate amd64 Packages"
+dpkg-scanpackages pool/main 2>/dev/null | awk -v RS='' -v ORS='\n\n' '/Architecture: (amd64|x86_64)/' > "dists/stable/main/binary-amd64/Packages"
+if [[ -s "dists/stable/main/binary-amd64/Packages" ]]; then
+  gzip -k -f "dists/stable/main/binary-amd64/Packages" 2>/dev/null || err "Failed to gzip amd64 Packages"
 else
-  err "No .deb files found for amd64"
+  err "No amd64 packages found in pool/main"
 fi
-gzip -k -f "dists/stable/main/binary-amd64/Packages" 2>/dev/null || err "Failed to gzip amd64 Packages"
 
 # For arm64
-if [[ -n "$(ls -A pool/main/*.deb 2>/dev/null)" ]]; then
-  dpkg-scanpackages --arch arm64 pool/main > "dists/stable/main/binary-arm64/Packages" 2>/dev/null || err "Failed to generate arm64 Packages"
+dpkg-scanpackages pool/main 2>/dev/null | awk -v RS='' -v ORS='\n\n' '/Architecture: (arm64|aarch64)/' > "dists/stable/main/binary-arm64/Packages"
+if [[ -s "dists/stable/main/binary-arm64/Packages" ]]; then
+  gzip -k -f "dists/stable/main/binary-arm64/Packages" 2>/dev/null || err "Failed to gzip arm64 Packages"
 else
-  err "No .deb files found for arm64"
+  err "No arm64 packages found in pool/main"
 fi
-gzip -k -f "dists/stable/main/binary-arm64/Packages" 2>/dev/null || err "Failed to gzip arm64 Packages"
 
 # Generate Sources file (optional, but good practice)
 if [[ -n "$(ls -A pool/main/*.deb 2>/dev/null)" ]]; then
