@@ -150,80 +150,92 @@ backup_repos() {
 
 publish_apt() {
   log "Publishing APT repository..."
-  
+
   mkdir -p "$APT_REPO_DIR/pool/main"
+  mkdir -p "$APT_REPO_DIR/pool/main-amd64"
+  mkdir -p "$APT_REPO_DIR/pool/main-arm64"
   mkdir -p "$APT_REPO_DIR/dists/stable/main/binary-amd64"
   mkdir -p "$APT_REPO_DIR/dists/stable/main/binary-arm64"
-  
-  # Copy new packages
+
+  # Copy new packages to main pool and architecture-specific pools
   local debs
   debs=$(ls -1 "$DIST_DIR"/*.deb 2>/dev/null || true)
 
   for deb in $debs; do
     local basename=$(basename "$deb")
-    
-    # Check if package already exists
-    if [[ -f "$APT_REPO_DIR/pool/main/$basename" ]]; then
+    local arch_dir=""
+
+    # Determine architecture from filename
+    if [[ "$basename" =~ [/_]amd64\.deb$ ]]; then
+      arch_dir="pool/main-amd64"
+    elif [[ "$basename" =~ [/_]arm64\.deb$ ]]; then
+      arch_dir="pool/main-arm64"
+    elif [[ "$basename" =~ [/_]x86_64\.deb$ ]]; then
+      arch_dir="pool/main-amd64"
+    elif [[ "$basename" =~ [/_]aarch64\.deb$ ]]; then
+      arch_dir="pool/main-arm64"
+    else
+      # Can't determine from filename, check package metadata
+      local pkg_arch=$(dpkg -I "$deb" 2>/dev/null | grep -i "^ Architecture:" | cut -d: -f2 | xargs || echo "")
+      case "$pkg_arch" in
+        amd64|x86_64) arch_dir="pool/main-amd64" ;;
+        arm64|aarch64) arch_dir="pool/main-arm64" ;;
+        *) warn "Unknown architecture for $basename: $pkg_arch"; continue ;;
+      esac
+    fi
+
+    [[ -z "$arch_dir" ]] && continue
+
+    # Copy to main pool and architecture-specific pool
+    if [[ -f "$APT_REPO_DIR/$arch_dir/$basename" ]]; then
       local new_hash=$(sha256sum "$deb" | cut -d' ' -f1)
-      local old_hash=$(sha256sum "$APT_REPO_DIR/pool/main/$basename" | cut -d' ' -f1)
-      
+      local old_hash=$(sha256sum "$APT_REPO_DIR/$arch_dir/$basename" | cut -d' ' -f1)
+
       if [[ "$new_hash" == "$old_hash" ]]; then
         log "Package already in repository (unchanged): $basename"
-        continue
       else
         log "Replacing package: $basename"
+        cp "$deb" "$APT_REPO_DIR/$arch_dir/"
+        cp "$deb" "$APT_REPO_DIR/pool/main/"
       fi
+    else
+      cp "$deb" "$APT_REPO_DIR/$arch_dir/"
+      cp "$deb" "$APT_REPO_DIR/pool/main/"
+      log "Added: $basename"
     fi
-    
-    cp "$deb" "$APT_REPO_DIR/pool/main/"
-    log "Added: $basename"
   done
-  
+
   # Generate Packages files
   cd "$APT_REPO_DIR"
 
-  log "Generating Packages files (with architecture filtering)..."
+  log "Generating Packages files..."
 
-  # Generate full Packages file for diagnostics
-  if ! dpkg-scanpackages pool/main > /tmp/full_packages.txt 2>/tmp/scan_error.txt; then
-    cat /tmp/scan_error.txt
-    err "dpkg-scanpackages failed"
-  fi
-
-  # Check what architectures are actually in the packages
-  log "Detecting package architectures..."
-  grep -i "^Architecture:" /tmp/full_packages.txt || log "No Architecture fields found"
-
-  # For amd64
+  # For amd64 - scan only amd64 packages
   log "Generating amd64 Packages file..."
-  if grep -q -iE 'Architecture: (amd64|x86_64)' /tmp/full_packages.txt; then
-    awk -v RS='' -v ORS='\n\n' 'tolower($0) ~ /architecture: (amd64|x86_64)/' /tmp/full_packages.txt > dists/stable/main/binary-amd64/Packages
-    if [[ -s dists/stable/main/binary-amd64/Packages ]]; then
-      if ! gzip -k -f dists/stable/main/binary-amd64/Packages 2>/dev/null; then
-        err "Failed to gzip amd64 Packages"
-      fi
-      log "amd64 Packages file generated successfully"
-    else
-      err "amd64 Packages file is empty after filtering"
+  if ! dpkg-scanpackages pool/main-amd64 > dists/stable/main/binary-amd64/Packages 2>&1; then
+    err "dpkg-scanpackages failed for amd64"
+  fi
+  if [[ -s dists/stable/main/binary-amd64/Packages ]]; then
+    if ! gzip -k -f dists/stable/main/binary-amd64/Packages 2>/dev/null; then
+      err "Failed to gzip amd64 Packages"
     fi
+    log "amd64 Packages file generated successfully"
   else
-    err "No amd64 packages found in pool/main"
+    err "No amd64 packages found in pool/main-amd64"
   fi
 
-  # For arm64
+  # For arm64 - scan only arm64 packages
   log "Generating arm64 Packages file..."
-  if grep -q -iE 'Architecture: (arm64|aarch64)' /tmp/full_packages.txt; then
-    awk -v RS='' -v ORS='\n\n' 'tolower($0) ~ /architecture: (arm64|aarch64)/' /tmp/full_packages.txt > dists/stable/main/binary-arm64/Packages
-    if [[ -s dists/stable/main/binary-arm64/Packages ]]; then
-      if ! gzip -k -f dists/stable/main/binary-arm64/Packages 2>/dev/null; then
-        err "Failed to gzip arm64 Packages"
-      fi
-      log "arm64 Packages file generated successfully"
-    else
-      err "arm64 Packages file is empty after filtering"
+  if ! dpkg-scanpackages pool/main-arm64 > dists/stable/main/binary-arm64/Packages 2>&1; then
+    err "dpkg-scanpackages failed for arm64"
+  fi
+  if [[ -s dists/stable/main/binary-arm64/Packages ]]; then
+    if ! gzip -k -f dists/stable/main/binary-arm64/Packages 2>/dev/null; then
+      err "Failed to gzip arm64 Packages"
     fi
+    log "arm64 Packages file generated successfully"
   else
-    err "No arm64 packages found in pool/main"
+    err "No arm64 packages found in pool/main-arm64"
   fi
   
   # Generate Release file
@@ -272,9 +284,6 @@ EOF
         "dists/$dist/Release"
     fi
   done
-
-  # Cleanup temporary files
-  rm -f /tmp/full_packages.txt /tmp/scan_error.txt
 
   cd - >/dev/null
   log "APT repository updated successfully"
