@@ -27,6 +27,16 @@ die_with_restore() {
   exit 1
 }
 
+get_file_size() {
+  local f="$1"
+  # Cross-platform stat: Linux uses -c%s, macOS/BSD uses -f%z
+  if stat -c%s "$f" >/dev/null 2>&1; then
+    stat -c%s "$f" 2>/dev/null || echo "0"
+  else
+    stat -f%z "$f" 2>/dev/null || echo "0"
+  fi
+}
+
 check_deps() {
   local deps=(dpkg-scanpackages gzip createrepo_c sha256sum)
   for cmd in "${deps[@]}"; do
@@ -171,21 +181,29 @@ publish_apt() {
   
   # Generate Packages files
   cd "$APT_REPO_DIR"
-  
+
   log "Generating Packages files (with architecture filtering)..."
 
   # For amd64
-  dpkg-scanpackages pool/main 2>/dev/null | awk -v RS='' -v ORS='\n\n' '/Architecture: (amd64|x86_64)/' > dists/stable/main/binary-amd64/Packages
+  if ! dpkg-scanpackages pool/main 2>&1 | awk -v RS='' -v ORS='\n\n' '/Architecture: (amd64|x86_64)/' > dists/stable/main/binary-amd64/Packages; then
+    warn "dpkg-scanpackages failed for amd64"
+  fi
   if [[ -s dists/stable/main/binary-amd64/Packages ]]; then
-    gzip -k -f dists/stable/main/binary-amd64/Packages 2>/dev/null || err "Failed to gzip amd64 Packages"
+    if ! gzip -k -f dists/stable/main/binary-amd64/Packages 2>/dev/null; then
+      err "Failed to gzip amd64 Packages"
+    fi
   else
     err "No amd64 packages found in pool/main"
   fi
-  
+
   # For arm64
-  dpkg-scanpackages pool/main 2>/dev/null | awk -v RS='' -v ORS='\n\n' '/Architecture: (arm64|aarch64)/' > dists/stable/main/binary-arm64/Packages
+  if ! dpkg-scanpackages pool/main 2>&1 | awk -v RS='' -v ORS='\n\n' '/Architecture: (arm64|aarch64)/' > dists/stable/main/binary-arm64/Packages; then
+    warn "dpkg-scanpackages failed for arm64"
+  fi
   if [[ -s dists/stable/main/binary-arm64/Packages ]]; then
-    gzip -k -f dists/stable/main/binary-arm64/Packages 2>/dev/null || err "Failed to gzip arm64 Packages"
+    if ! gzip -k -f dists/stable/main/binary-arm64/Packages 2>/dev/null; then
+      err "Failed to gzip arm64 Packages"
+    fi
   else
     err "No arm64 packages found in pool/main"
   fi
@@ -208,7 +226,7 @@ EOF
     echo "MD5Sum:"
     for f in dists/stable/main/binary-*/Packages*; do
       [[ -f "$f" ]] || continue
-      local size=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo "0")
+      local size=$(get_file_size "$f")
       local hash=$(md5sum "$f" | cut -d' ' -f1)
       local rel_path="${f#dists/stable/}"
       printf " %s %8s %s\n" "$hash" "$size" "$rel_path"
@@ -216,7 +234,7 @@ EOF
     echo "SHA256:"
     for f in dists/stable/main/binary-*/Packages*; do
       [[ -f "$f" ]] || continue
-      local size=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo "0")
+      local size=$(get_file_size "$f")
       local hash=$(sha256sum "$f" | cut -d' ' -f1)
       local rel_path="${f#dists/stable/}"
       printf " %s %8s %s\n" "$hash" "$size" "$rel_path"
@@ -278,14 +296,16 @@ publish_rpm() {
   
   # Generate repository metadata
   cd "$RPM_REPO_DIR"
-  
+
   for arch in x86_64 aarch64; do
     if compgen -G "$arch/*.rpm" >/dev/null; then
       log "Generating metadata for $arch..."
       if command -v createrepo_c >/dev/null 2>&1; then
-        createrepo_c --update "$arch" 2>/dev/null || createrepo_c "$arch" 2>/dev/null || true
+        createrepo_c --update "$arch" 2>/dev/null || createrepo_c "$arch" 2>/dev/null || err "Failed to generate RPM metadata for $arch"
+      elif command -v createrepo >/dev/null 2>&1; then
+        createrepo --update "$arch" 2>/dev/null || createrepo "$arch" 2>/dev/null || err "Failed to generate RPM metadata for $arch"
       else
-        warn "createrepo_c not available, skipping RPM metadata generation"
+        err "Neither createrepo_c nor createrepo found. Cannot generate RPM repository for $arch"
       fi
     else
       err "No RPM packages found for $arch in dist/"
@@ -319,7 +339,7 @@ EOF
   local debs=("$APT_REPO_DIR/pool/main"/*.deb)
   shopt -u nullglob
   for deb in "${debs[@]}"; do
-    local size=$(stat -c%s "$deb" 2>/dev/null || stat -f%z "$deb" 2>/dev/null || echo "0")
+    local size=$(get_file_size "$deb")
     local hash=$(sha256sum "$deb" | cut -d' ' -f1)
     echo "  $(basename "$deb") (size: $size, sha256: $hash)" >> "$manifest_file"
   done
@@ -337,7 +357,7 @@ EOF
   local rpms=("$RPM_REPO_DIR"/*/*.rpm)
   shopt -u nullglob
   for rpm in "${rpms[@]}"; do
-    local size=$(stat -c%s "$rpm" 2>/dev/null || stat -f%z "$rpm" 2>/dev/null || echo "0")
+    local size=$(get_file_size "$rpm")
     local hash=$(sha256sum "$rpm" | cut -d' ' -f1)
     echo "  $(basename "$rpm") (size: $size, sha256: $hash)" >> "$manifest_file"
   done

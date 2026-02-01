@@ -9,6 +9,16 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 log() { echo -e "\033[1;34m[DEBUG]\033[0m $*"; }
 section() { echo -e "\n\033[1;36m=== $* ===\033[0m"; }
 
+get_file_mtime() {
+  local f="$1"
+  # Cross-platform stat: Linux uses -c %y, macOS/BSD uses -f %Sm
+  if stat -c %y "$f" >/dev/null 2>&1; then
+    stat -c %y "$f" 2>/dev/null | cut -d' ' -f1-2 || echo "unknown"
+  else
+    stat -f %Sm "$f" 2>/dev/null || echo "unknown"
+  fi
+}
+
 # --- Main ---
 
 section "System Information"
@@ -140,7 +150,7 @@ fi
 section "Manifest"
 if [[ -f "$PROJECT_ROOT/site/public/MANIFEST.txt" ]]; then
   log "✓ Manifest exists"
-  log "Last updated: $(stat -c %y "$PROJECT_ROOT/site/public/MANIFEST.txt" 2>/dev/null | cut -d' ' -f1-2 || stat -f %Sm "$PROJECT_ROOT/site/public/MANIFEST.txt" 2>/dev/null || echo "unknown")"
+  log "Last updated: $(get_file_mtime "$PROJECT_ROOT/site/public/MANIFEST.txt")"
 else
   log "✗ Manifest not found"
 fi

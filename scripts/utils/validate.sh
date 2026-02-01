@@ -71,6 +71,13 @@ require_file "$APT_DIR/dists/stable/main/binary-amd64/Packages.gz"
 require_file "$APT_DIR/dists/stable/main/binary-arm64/Packages"
 require_file "$APT_DIR/dists/stable/main/binary-arm64/Packages.gz"
 
+# Sources file is optional for binary-only repos
+if [[ -f "$APT_DIR/dists/stable/main/Sources" ]]; then
+  log "Sources file found in APT repository"
+else
+  log "Sources file not found (optional for binary-only repos)"
+fi
+
 log "Checking APT distribution aliases..."
 for dist in noble jammy focal bookworm bullseye; do
   require_file "$APT_DIR/dists/$dist/Release"

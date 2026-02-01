@@ -70,28 +70,39 @@ log "Generating Packages files (with architecture filtering)..."
 cd "$REPO_DIR"
 
 # For amd64
-dpkg-scanpackages pool/main 2>/dev/null | awk -v RS='' -v ORS='\n\n' '/Architecture: (amd64|x86_64)/' > "dists/stable/main/binary-amd64/Packages"
+if ! dpkg-scanpackages pool/main 2>&1 | awk -v RS='' -v ORS='\n\n' '/Architecture: (amd64|x86_64)/' > "dists/stable/main/binary-amd64/Packages"; then
+  warn "dpkg-scanpackages failed for amd64"
+fi
 if [[ -s "dists/stable/main/binary-amd64/Packages" ]]; then
-  gzip -k -f "dists/stable/main/binary-amd64/Packages" 2>/dev/null || err "Failed to gzip amd64 Packages"
+  if ! gzip -k -f "dists/stable/main/binary-amd64/Packages" 2>/dev/null; then
+    err "Failed to gzip amd64 Packages"
+  fi
 else
   err "No amd64 packages found in pool/main"
 fi
 
 # For arm64
-dpkg-scanpackages pool/main 2>/dev/null | awk -v RS='' -v ORS='\n\n' '/Architecture: (arm64|aarch64)/' > "dists/stable/main/binary-arm64/Packages"
+if ! dpkg-scanpackages pool/main 2>&1 | awk -v RS='' -v ORS='\n\n' '/Architecture: (arm64|aarch64)/' > "dists/stable/main/binary-arm64/Packages"; then
+  warn "dpkg-scanpackages failed for arm64"
+fi
 if [[ -s "dists/stable/main/binary-arm64/Packages" ]]; then
-  gzip -k -f "dists/stable/main/binary-arm64/Packages" 2>/dev/null || err "Failed to gzip arm64 Packages"
+  if ! gzip -k -f "dists/stable/main/binary-arm64/Packages" 2>/dev/null; then
+    err "Failed to gzip arm64 Packages"
+  fi
 else
   err "No arm64 packages found in pool/main"
 fi
 
-# Generate Sources file (optional, but good practice)
+# Generate Sources file (optional, but good practice) - don't fail if it doesn't work
 if [[ -n "$(ls -A pool/main/*.deb 2>/dev/null)" ]]; then
-  dpkg-scansources pool/main > "dists/stable/main/Sources" 2>/dev/null || err "Failed to generate Sources"
+  if dpkg-scansources pool/main > "dists/stable/main/Sources" 2>/dev/null; then
+    gzip -k -f "dists/stable/main/Sources" 2>/dev/null || warn "Failed to gzip Sources"
+  else
+    warn "Failed to generate Sources file (this is optional)"
+  fi
 else
-  err "No .deb files found for Sources"
+  warn "No .deb files found for Sources generation (this is optional)"
 fi
-gzip -k -f "dists/stable/main/Sources" 2>/dev/null || err "Failed to gzip Sources"
 
 # Generate Release file
 log "Generating Release file..."
