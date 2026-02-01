@@ -184,25 +184,43 @@ publish_apt() {
 
   log "Generating Packages files (with architecture filtering)..."
 
-  # For amd64
-  if ! dpkg-scanpackages pool/main 2>&1 | awk -v RS='' -v ORS='\n\n' '/Architecture: (amd64|x86_64)/' > dists/stable/main/binary-amd64/Packages; then
-    warn "dpkg-scanpackages failed for amd64"
+  # Generate full Packages file for diagnostics
+  if ! dpkg-scanpackages pool/main > /tmp/full_packages.txt 2>/tmp/scan_error.txt; then
+    cat /tmp/scan_error.txt
+    err "dpkg-scanpackages failed"
   fi
-  if [[ -s dists/stable/main/binary-amd64/Packages ]]; then
-    if ! gzip -k -f dists/stable/main/binary-amd64/Packages 2>/dev/null; then
-      err "Failed to gzip amd64 Packages"
+
+  # Check what architectures are actually in the packages
+  log "Detecting package architectures..."
+  grep -i "^Architecture:" /tmp/full_packages.txt || log "No Architecture fields found"
+
+  # For amd64
+  log "Generating amd64 Packages file..."
+  if grep -q -iE 'Architecture: (amd64|x86_64)' /tmp/full_packages.txt; then
+    awk -v RS='' -v ORS='\n\n' 'tolower($0) ~ /architecture: (amd64|x86_64)/' /tmp/full_packages.txt > dists/stable/main/binary-amd64/Packages
+    if [[ -s dists/stable/main/binary-amd64/Packages ]]; then
+      if ! gzip -k -f dists/stable/main/binary-amd64/Packages 2>/dev/null; then
+        err "Failed to gzip amd64 Packages"
+      fi
+      log "amd64 Packages file generated successfully"
+    else
+      err "amd64 Packages file is empty after filtering"
     fi
   else
     err "No amd64 packages found in pool/main"
   fi
 
   # For arm64
-  if ! dpkg-scanpackages pool/main 2>&1 | awk -v RS='' -v ORS='\n\n' '/Architecture: (arm64|aarch64)/' > dists/stable/main/binary-arm64/Packages; then
-    warn "dpkg-scanpackages failed for arm64"
-  fi
-  if [[ -s dists/stable/main/binary-arm64/Packages ]]; then
-    if ! gzip -k -f dists/stable/main/binary-arm64/Packages 2>/dev/null; then
-      err "Failed to gzip arm64 Packages"
+  log "Generating arm64 Packages file..."
+  if grep -q -iE 'Architecture: (arm64|aarch64)' /tmp/full_packages.txt; then
+    awk -v RS='' -v ORS='\n\n' 'tolower($0) ~ /architecture: (arm64|aarch64)/' /tmp/full_packages.txt > dists/stable/main/binary-arm64/Packages
+    if [[ -s dists/stable/main/binary-arm64/Packages ]]; then
+      if ! gzip -k -f dists/stable/main/binary-arm64/Packages 2>/dev/null; then
+        err "Failed to gzip arm64 Packages"
+      fi
+      log "arm64 Packages file generated successfully"
+    else
+      err "arm64 Packages file is empty after filtering"
     fi
   else
     err "No arm64 packages found in pool/main"
@@ -254,7 +272,10 @@ EOF
         "dists/$dist/Release"
     fi
   done
-  
+
+  # Cleanup temporary files
+  rm -f /tmp/full_packages.txt /tmp/scan_error.txt
+
   cd - >/dev/null
   log "APT repository updated successfully"
 }

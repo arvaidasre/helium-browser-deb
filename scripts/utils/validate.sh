@@ -70,7 +70,6 @@ require_file "$APT_DIR/dists/stable/main/binary-amd64/Packages"
 require_file "$APT_DIR/dists/stable/main/binary-amd64/Packages.gz"
 require_file "$APT_DIR/dists/stable/main/binary-arm64/Packages"
 require_file "$APT_DIR/dists/stable/main/binary-arm64/Packages.gz"
-
 # Sources file is optional for binary-only repos
 if [[ -f "$APT_DIR/dists/stable/main/Sources" ]]; then
   log "Sources file found in APT repository"
