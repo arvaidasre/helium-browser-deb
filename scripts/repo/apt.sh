@@ -13,6 +13,7 @@ APT_DISTS_DEFAULT=(stable noble jammy focal bookworm bullseye)
 
 # --- Helper Functions ---
 log() { echo -e "\033[1;34m[APT-REPO]\033[0m $*"; }
+warn() { echo -e "\033[1;33m[WARN]\033[0m $*" >&2; }
 err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
 
 check_deps() {
@@ -70,7 +71,7 @@ log "Generating Packages files (with architecture filtering)..."
 cd "$REPO_DIR"
 
 # For amd64
-if ! dpkg-scanpackages pool/main 2>&1 | awk -v RS='' -v ORS='\n\n' '/Architecture: (amd64|x86_64)/' > "dists/stable/main/binary-amd64/Packages"; then
+if ! dpkg-scanpackages pool/main 2>"dists/stable/main/binary-amd64/dpkg-scanpackages.log" | awk -v RS='' -v ORS='\n\n' '/Architecture: (amd64|x86_64)/' > "dists/stable/main/binary-amd64/Packages"; then
   warn "dpkg-scanpackages failed for amd64"
 fi
 if [[ -s "dists/stable/main/binary-amd64/Packages" ]]; then
@@ -82,7 +83,7 @@ else
 fi
 
 # For arm64
-if ! dpkg-scanpackages pool/main 2>&1 | awk -v RS='' -v ORS='\n\n' '/Architecture: (arm64|aarch64)/' > "dists/stable/main/binary-arm64/Packages"; then
+if ! dpkg-scanpackages pool/main 2>"dists/stable/main/binary-arm64/dpkg-scanpackages.log" | awk -v RS='' -v ORS='\n\n' '/Architecture: (arm64|aarch64)/' > "dists/stable/main/binary-arm64/Packages"; then
   warn "dpkg-scanpackages failed for arm64"
 fi
 if [[ -s "dists/stable/main/binary-arm64/Packages" ]]; then
@@ -95,7 +96,7 @@ fi
 
 # Generate Sources file (optional, but good practice) - don't fail if it doesn't work
 if [[ -n "$(ls -A pool/main/*.deb 2>/dev/null)" ]]; then
-  if dpkg-scansources pool/main > "dists/stable/main/Sources" 2>/dev/null; then
+  if dpkg-scansources pool/main > "dists/stable/main/Sources" 2>"dists/stable/main/dpkg-scansources.log"; then
     gzip -k -f "dists/stable/main/Sources" 2>/dev/null || warn "Failed to gzip Sources"
   else
     warn "Failed to generate Sources file (this is optional)"
