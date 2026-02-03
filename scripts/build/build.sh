@@ -58,9 +58,14 @@ if [[ -n "${GITHUB_TOKEN:-}" && -n "${GITHUB_REPOSITORY:-}" && "${FORCE_BUILD:-}
   # Check creation date of upstream release - don't build releases older than 2025-01-01
   UPSTREAM_CREATED_AT="$(jq -r '.created_at' <<<"$JSON")"
   log "Upstream release created at: $UPSTREAM_CREATED_AT"
-  if [[ "$UPSTREAM_CREATED_AT" < "2025-01-01" ]]; then
-    log "Upstream release is too old (pre-2025). Skipping."
-    SKIPPED="1"
+  if [[ -n "$UPSTREAM_CREATED_AT" ]]; then
+    # Convert ISO 8601 date to epoch for proper comparison
+    CREATED_EPOCH=$(date -d "$UPSTREAM_CREATED_AT" +%s 2>/dev/null || echo 0)
+    MIN_EPOCH=$(date -d "2025-01-01" +%s 2>/dev/null || echo 0)
+    if [[ "$CREATED_EPOCH" -lt "$MIN_EPOCH" ]]; then
+      log "Upstream release is too old (pre-2025). Skipping."
+      SKIPPED="1"
+    fi
   fi
 elif [[ "${FORCE_BUILD:-}" == "true" ]]; then
   log "FORCE_BUILD enabled - skipping existence check"

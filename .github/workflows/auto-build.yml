@@ -87,10 +87,15 @@ jobs:
           
           # Check creation date - don't build releases older than 2025-01-01
           CREATED_AT=$(echo "$RELEASE_JSON" | jq -r '.created_at // ""')
-          if [[ -n "$CREATED_AT" && "$CREATED_AT" < "2025-01-01" ]]; then
-            echo "Upstream release is too old: $CREATED_AT"
-            echo "should_build=false" >> "$GITHUB_OUTPUT"
-            exit 0
+          if [[ -n "$CREATED_AT" ]]; then
+            # Convert ISO 8601 date to epoch for proper comparison
+            CREATED_EPOCH=$(date -d "$CREATED_AT" +%s 2>/dev/null || echo 0)
+            MIN_EPOCH=$(date -d "2025-01-01" +%s 2>/dev/null || echo 0)
+            if [[ "$CREATED_EPOCH" -lt "$MIN_EPOCH" ]]; then
+              echo "Upstream release is too old: $CREATED_AT"
+              echo "should_build=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
           fi
           
           echo "New version found: $RELEASE_TAG"
