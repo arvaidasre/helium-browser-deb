@@ -39,7 +39,7 @@ jobs:
           echo "Latest upstream version: $UPSTREAM_TAG"
           
           # Check if upstream has Linux tarball assets
-          ASSET_COUNT=$(echo "$UPSTREAM_JSON" | jq '[.assets[] | select(.name | test("linux.*\\.tar\\.(xz|gz|zst|bz2)$"; "i"))] | length')
+          ASSET_COUNT=$(echo "$UPSTREAM_JSON" | jq '[.assets[] | select(.name | test("linux"; "i")) | select(.name | test("\\.tar\\.(xz|gz|zst|bz2)$"; "i"))] | length')
           if [[ "$ASSET_COUNT" -eq 0 ]]; then
             echo "No Linux tarball assets found upstream"
             echo "trigger=false" >> "$GITHUB_OUTPUT"

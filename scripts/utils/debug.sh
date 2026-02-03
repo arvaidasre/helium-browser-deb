@@ -45,8 +45,8 @@ done
 section "Directory Structure"
 for dir in dist site/public releases .backups sync; do
   if [[ -d "$PROJECT_ROOT/$dir" ]]; then
-    local size=$(du -sh "$PROJECT_ROOT/$dir" 2>/dev/null | cut -f1)
-    log "[OK] $dir/ ($size)"
+    dir_size=$(du -sh "$PROJECT_ROOT/$dir" 2>/dev/null | cut -f1)
+    log "[OK] $dir/ ($dir_size)"
   else
     log "[MISSING] $dir/ (missing)"
   fi
@@ -59,7 +59,7 @@ if [[ -d "$PROJECT_ROOT/site/public/apt" ]]; then
   
   log ""
   log "Package count:"
-  local deb_count=$(ls -1 "$PROJECT_ROOT/site/public/apt/pool/main"/*.deb 2>/dev/null | wc -l || echo "0")
+  deb_count=$(ls -1 "$PROJECT_ROOT/site/public/apt/pool/main"/*.deb 2>/dev/null | wc -l || echo "0")
   log "  DEB packages: $deb_count"
   
   if [[ -f "$PROJECT_ROOT/site/public/apt/dists/stable/Release" ]]; then
@@ -78,8 +78,8 @@ if [[ -d "$PROJECT_ROOT/site/public/rpm" ]]; then
   
   log ""
   log "Package count:"
-  local rpm_x86=$(ls -1 "$PROJECT_ROOT/site/public/rpm/x86_64"/*.rpm 2>/dev/null | wc -l || echo "0")
-  local rpm_arm=$(ls -1 "$PROJECT_ROOT/site/public/rpm/aarch64"/*.rpm 2>/dev/null | wc -l || echo "0")
+  rpm_x86=$(ls -1 "$PROJECT_ROOT/site/public/rpm/x86_64"/*.rpm 2>/dev/null | wc -l || echo "0")
+  rpm_arm=$(ls -1 "$PROJECT_ROOT/site/public/rpm/aarch64"/*.rpm 2>/dev/null | wc -l || echo "0")
   log "  x86_64 packages: $rpm_x86"
   log "  aarch64 packages: $rpm_arm"
 else
@@ -88,7 +88,7 @@ fi
 
 section "Built Packages"
 if [[ -d "$PROJECT_ROOT/dist" ]]; then
-  local pkg_count=$(ls -1 "$PROJECT_ROOT/dist"/*.{deb,rpm} 2>/dev/null | wc -l || echo "0")
+  pkg_count=$(ls -1 "$PROJECT_ROOT/dist"/*.{deb,rpm} 2>/dev/null | wc -l || echo "0")
   if [[ $pkg_count -gt 0 ]]; then
     log "Found $pkg_count packages:"
     ls -lh "$PROJECT_ROOT/dist"/*.{deb,rpm} 2>/dev/null | awk '{print "  " $9 " (" $5 ")"}' || true
@@ -101,7 +101,7 @@ fi
 
 section "Synced Releases"
 if [[ -d "$PROJECT_ROOT/releases" ]]; then
-  local release_count=$(ls -d "$PROJECT_ROOT/releases"/*/ 2>/dev/null | wc -l || echo "0")
+  release_count=$(ls -d "$PROJECT_ROOT/releases"/*/ 2>/dev/null | wc -l || echo "0")
   log "Found $release_count releases"
   
   if [[ -f "$PROJECT_ROOT/releases/INDEX.md" ]]; then
@@ -109,7 +109,7 @@ if [[ -d "$PROJECT_ROOT/releases" ]]; then
   fi
   
   if [[ -f "$PROJECT_ROOT/releases/CHANGELOG.md" ]]; then
-    local lines=$(wc -l < "$PROJECT_ROOT/releases/CHANGELOG.md")
+    lines=$(wc -l < "$PROJECT_ROOT/releases/CHANGELOG.md")
     log "[OK] CHANGELOG.md exists ($lines lines)"
   fi
 else
@@ -128,7 +128,7 @@ if [[ -d "$PROJECT_ROOT/.git" ]]; then
   
   log ""
   log "Uncommitted changes:"
-  local changes=$(git -C "$PROJECT_ROOT" status --porcelain | wc -l)
+  changes=$(git -C "$PROJECT_ROOT" status --porcelain | wc -l)
   log "  $changes files"
 else
   log "Not a git repository"
@@ -136,7 +136,7 @@ fi
 
 section "Recent Backups"
 if [[ -d "$PROJECT_ROOT/.backups" ]]; then
-  local backup_count=$(ls -1 "$PROJECT_ROOT/.backups"/*.tar.gz 2>/dev/null | wc -l || echo "0")
+  backup_count=$(ls -1 "$PROJECT_ROOT/.backups"/*.tar.gz 2>/dev/null | wc -l || echo "0")
   if [[ $backup_count -gt 0 ]]; then
     log "Found $backup_count backups:"
     ls -lh "$PROJECT_ROOT/.backups"/*.tar.gz 2>/dev/null | tail -5 | awk '{print "  " $9 " (" $5 ")"}' || true

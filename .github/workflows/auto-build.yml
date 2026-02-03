@@ -61,7 +61,7 @@ jobs:
           echo "Latest upstream release: $RELEASE_TAG"
           
           # Check assets exist
-          ASSET_COUNT=$(echo "$RELEASE_JSON" | jq '[.assets[] | select(.name | test("linux.*\\.tar\\.(xz|gz|zst|bz2)$"; "i"))] | length')
+          ASSET_COUNT=$(echo "$RELEASE_JSON" | jq '[.assets[] | select(.name | test("linux"; "i")) | select(.name | test("\\.tar\\.(xz|gz|zst|bz2)$"; "i"))] | length')
           if [[ "$ASSET_COUNT" -eq 0 ]]; then
             echo "No Linux tarball assets found in $RELEASE_TAG"
             echo "should_build=false" >> "$GITHUB_OUTPUT"
@@ -138,12 +138,16 @@ jobs:
             fi
           fi
           
-          # Verify packages were created
-          if ls dist/*.deb 1>/dev/null 2>&1 && ls dist/*.rpm 1>/dev/null 2>&1; then
+          # Verify packages were created for this architecture
+          rpm_arch="x86_64"
+          if [[ "${{ matrix.arch }}" == "arm64" ]]; then
+            rpm_arch="aarch64"
+          fi
+          if ls "dist"/*_${{ matrix.arch }}.deb 1>/dev/null 2>&1 && ls "dist"/*-${rpm_arch}.rpm 1>/dev/null 2>&1; then
             echo "Packages built successfully"
             echo "built=true" >> "$GITHUB_OUTPUT"
           else
-            echo "No packages found"
+            echo "No packages found for ${{ matrix.arch }}"
             echo "built=false" >> "$GITHUB_OUTPUT"
             exit 1
           fi

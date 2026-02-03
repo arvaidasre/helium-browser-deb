@@ -35,12 +35,32 @@ fetch_release_json() {
 }
 
 set_arch_vars() {
-  local arch="${ARCH_OVERRIDE:-$(dpkg --print-architecture 2>/dev/null || uname -m)}"
+  local arch_raw="${ARCH_OVERRIDE:-$(dpkg --print-architecture 2>/dev/null || uname -m)}"
+  local arch="$arch_raw"
+
   case "$arch" in
-    x86_64|amd64) ASSET_PATTERN="x86_64"; DEB_ARCH="amd64"; RPM_ARCH="x86_64" ;;
-    aarch64|arm64) ASSET_PATTERN="arm64"; DEB_ARCH="arm64"; RPM_ARCH="aarch64" ;;
-    *) ASSET_PATTERN="$arch"; DEB_ARCH="$arch"; RPM_ARCH="$arch" ;;
+    x86_64) arch="amd64" ;;
+    aarch64) arch="arm64" ;;
   esac
+
+  case "$arch" in
+    amd64)
+      ASSET_PATTERN="x86_64|amd64"
+      DEB_ARCH="amd64"
+      RPM_ARCH="x86_64"
+      ;;
+    arm64)
+      ASSET_PATTERN="arm64|aarch64"
+      DEB_ARCH="arm64"
+      RPM_ARCH="aarch64"
+      ;;
+    *)
+      ASSET_PATTERN="$arch"
+      DEB_ARCH="$arch"
+      RPM_ARCH="$arch"
+      ;;
+  esac
+
   ARCH="$arch"
 }
 
@@ -57,6 +77,12 @@ resolve_tarball_url() {
   if [[ -z "$url" ]]; then
     url="$(jq -r '(.assets // [])[]
       | select(.name | test("linux"; "i"))
+      | select(.name | test("\\.tar\\.(xz|gz|zst|bz2)$"; "i"))
+      | .browser_download_url' <<<"$json" | head -n 1)"
+  fi
+
+  if [[ -z "$url" ]]; then
+    url="$(jq -r '(.assets // [])[]
       | select(.name | test("\\.tar\\.(xz|gz|zst|bz2)$"; "i"))
       | .browser_download_url' <<<"$json" | head -n 1)"
   fi
