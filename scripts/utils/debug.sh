@@ -36,9 +36,9 @@ df -h | grep -E "^/dev|^Filesystem"
 section "Dependencies"
 for cmd in curl jq git dpkg-scanpackages gzip createrepo_c fpm sha256sum; do
   if command -v "$cmd" >/dev/null 2>&1; then
-    log "✓ $cmd: $(command -v "$cmd")"
+      log "[OK] $cmd: $(command -v "$cmd")"
   else
-    log "✗ $cmd: NOT FOUND"
+      log "[MISSING] $cmd: NOT FOUND"
   fi
 done
 
@@ -46,9 +46,9 @@ section "Directory Structure"
 for dir in dist site/public releases .backups sync; do
   if [[ -d "$PROJECT_ROOT/$dir" ]]; then
     local size=$(du -sh "$PROJECT_ROOT/$dir" 2>/dev/null | cut -f1)
-    log "✓ $dir/ ($size)"
+    log "[OK] $dir/ ($size)"
   else
-    log "✗ $dir/ (missing)"
+    log "[MISSING] $dir/ (missing)"
   fi
 done
 
@@ -105,12 +105,12 @@ if [[ -d "$PROJECT_ROOT/releases" ]]; then
   log "Found $release_count releases"
   
   if [[ -f "$PROJECT_ROOT/releases/INDEX.md" ]]; then
-    log "✓ INDEX.md exists"
+    log "[OK] INDEX.md exists"
   fi
   
   if [[ -f "$PROJECT_ROOT/releases/CHANGELOG.md" ]]; then
     local lines=$(wc -l < "$PROJECT_ROOT/releases/CHANGELOG.md")
-    log "✓ CHANGELOG.md exists ($lines lines)"
+    log "[OK] CHANGELOG.md exists ($lines lines)"
   fi
 else
   log "releases/ directory not found"
@@ -149,10 +149,10 @@ fi
 
 section "Manifest"
 if [[ -f "$PROJECT_ROOT/site/public/MANIFEST.txt" ]]; then
-  log "✓ Manifest exists"
+  log "[OK] Manifest exists"
   log "Last updated: $(get_file_mtime "$PROJECT_ROOT/site/public/MANIFEST.txt")"
 else
-  log "✗ Manifest not found"
+  log "[MISSING] Manifest not found"
 fi
 
 section "Summary"

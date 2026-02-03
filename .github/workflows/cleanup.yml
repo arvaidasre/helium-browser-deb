@@ -1,6 +1,6 @@
 name: Cleanup Old Releases
 
-# Automatiskai valo senas release kas savaite arba galima paleisti rankiniu budu
+# Automatically deletes old releases weekly or can be run manually.
 on:
   workflow_dispatch:
     inputs:
@@ -13,12 +13,12 @@ on:
         default: 'true'
         type: boolean
   schedule:
-    # Kas sekmadieni 2:00 UTC
+    # Every Sunday at 02:00 UTC
     - cron: '0 2 * * 0'
 
 jobs:
   cleanup:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
@@ -31,11 +31,11 @@ jobs:
         run: |
           set -euo pipefail
           
-          # Default values (naudojami kai trigerina schedule)
+          # Default values (used when triggered by schedule)
           KEEP="${{ github.event.inputs.keep_latest }}"
           DELETE_PRE="${{ github.event.inputs.delete_prereleases }}"
           
-          # Jei inputs tuscias (schedule), naudojam defaults
+          # If inputs are empty (schedule), use defaults
           [[ -z "$KEEP" ]] && KEEP="5"
           [[ -z "$DELETE_PRE" ]] && DELETE_PRE="true"
           

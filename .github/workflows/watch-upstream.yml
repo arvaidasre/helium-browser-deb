@@ -1,15 +1,15 @@
 name: Watch Upstream Releases
 
-# Tikrina kas 5 minutes ar yra nauja upstream versija ir triggerina build nedelsiant
+# Checks every 5 minutes for a new upstream release and triggers a build immediately.
 on:
   schedule:
-    # Kas 5 minutes - greitas reagavimas i naujas upstream versijas
+    # Every 5 minutes - fast response to new upstream releases.
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
   check-and-trigger:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     permissions:
       actions: write
       contents: read
@@ -24,7 +24,7 @@ jobs:
           
           echo "Checking upstream: $UPSTREAM_REPO"
           
-          # Gaunam paskutinę upstream versiją
+          # Fetch latest upstream release
           UPSTREAM_JSON=$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             "https://api.github.com/repos/${UPSTREAM_REPO}/releases/latest" 2>/dev/null || echo '{}')
           
@@ -38,7 +38,7 @@ jobs:
           
           echo "Latest upstream version: $UPSTREAM_TAG"
           
-          # Patikrinam ar upstream turi Linux asset'ų
+          # Check if upstream has Linux tarball assets
           ASSET_COUNT=$(echo "$UPSTREAM_JSON" | jq '[.assets[] | select(.name | test("linux.*\\.tar\\.(xz|gz|zst|bz2)$"; "i"))] | length')
           if [[ "$ASSET_COUNT" -eq 0 ]]; then
             echo "No Linux tarball assets found upstream"
@@ -46,7 +46,7 @@ jobs:
             exit 0
           fi
           
-          # Gaunam mūsų paskutinę versiją
+          # Fetch our latest release
           OUR_JSON=$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest" 2>/dev/null || echo '{}')
           
@@ -54,15 +54,15 @@ jobs:
           
           echo "Our latest version: ${OUR_TAG:-'(none)'}"
           
-          # Palyginam versijas
+          # Compare versions
           if [[ "$UPSTREAM_TAG" == "$OUR_TAG" ]]; then
             echo "Already up to date ($UPSTREAM_TAG)"
             echo "trigger=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           
-          # Nauja versija rasta!
-          echo "🎉 New upstream version detected: $UPSTREAM_TAG (we have: ${OUR_TAG:-none})"
+          # New version found
+          echo "New upstream version detected: $UPSTREAM_TAG (we have: ${OUR_TAG:-none})"
           echo "trigger=true" >> "$GITHUB_OUTPUT"
           echo "new_version=$UPSTREAM_TAG" >> "$GITHUB_OUTPUT"
       
@@ -80,4 +80,4 @@ jobs:
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/auto-build.yml/dispatches" \
             -d '{"ref":"main","inputs":{"force_build":"false"}}'
           
-          echo "✅ Build triggered successfully!"
+          echo "Build triggered successfully!"

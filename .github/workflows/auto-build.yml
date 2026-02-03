@@ -1,7 +1,7 @@
 name: Auto Build and Release
 
-# Automatiskai tikrina upstream kas valanda ir buildo nauja versija jei yra
-# Galima iskviesti ir per repository_dispatch webhook kai upstream isleidzia nauja versija
+# Automatically checks upstream every hour and builds a new version when available.
+# Can also be triggered via repository_dispatch when upstream publishes a new release.
 on:
   repository_dispatch:
     types: [upstream-release]
@@ -12,7 +12,7 @@ on:
         type: boolean
         default: false
   schedule:
-    # Kas 1 valanda - tikrinam dazniau del greitesnio reagavimo i naujas versijas
+    # Every 1 hour - faster response to new upstream releases.
     - cron: '0 * * * *'
 
 permissions:
@@ -25,7 +25,7 @@ env:
 
 jobs:
   check-and-build:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     outputs:
       new_version: ${{ steps.check.outputs.new_version }}
       upstream_tag: ${{ steps.check.outputs.upstream_tag }}

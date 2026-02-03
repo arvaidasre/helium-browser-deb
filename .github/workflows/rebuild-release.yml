@@ -1,23 +1,23 @@
 name: Rebuild Release
 
-# Leidžia rankiniu būdu perkurti bet kurią esamą arba naują versiją
+# Allows rebuilding any existing or new version manually.
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Versija (pvz. 0.7.10.1 arba 0.8.1.1)'
+        description: 'Version (e.g. 0.7.10.1 or 0.8.1.1)'
         required: true
         type: string
       replace_existing:
-        description: 'Perrašyti esamą release jei egzistuoja'
+        description: 'Replace existing release if it exists'
         type: boolean
         default: true
       update_repos:
-        description: 'Atnaujinti APT/RPM repozitorijas po build'
+        description: 'Update APT/RPM repositories after build'
         type: boolean
         default: true
       arch:
-        description: 'Kuri architektura buildinti'
+        description: 'Which architecture to build'
         type: choice
         default: all
         options:
@@ -35,7 +35,7 @@ env:
 
 jobs:
   validate:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.validate.outputs.tag }}
       is_prerelease: ${{ steps.validate.outputs.is_prerelease }}

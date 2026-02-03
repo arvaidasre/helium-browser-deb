@@ -214,11 +214,7 @@ build_offline_packages() {
 [Desktop Entry]
 Type=Application
 Name=Helium
-Name[lt_LT]=Helium
-Name[ru_RU]=Helium
 Comment=Helium Browser
-Comment[lt_LT]=Helium naršyklė
-Comment[ru_RU]=Браузер Helium
 Exec=/usr/bin/helium %U
 Terminal=false
 Categories=Network;WebBrowser;

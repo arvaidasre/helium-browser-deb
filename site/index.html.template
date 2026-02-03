@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Helium Browser — Linux Repository</title>
+    <title>Helium Browser - Linux Repository</title>
     <meta name="description" content="Official Helium Browser repository for Linux. APT and RPM packages with ARM64 support.">
     <meta name="theme-color" content="#0f172a">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -103,7 +103,7 @@
         }
 
         .hero::before {
-            content: "";
+            content: "-";
             position: absolute;
             top: 0;
             left: 0;
@@ -377,7 +377,7 @@
         }
 
         .package-group-title::before {
-            content: "";
+            content: "-";
             width: 5px;
             height: 24px;
             background: linear-gradient(180deg, var(--accent), var(--accent-hover));
@@ -404,7 +404,7 @@
         }
 
         .download-card::before {
-            content: "";
+            content: "-";
             position: absolute;
             top: 0;
             left: 0;
@@ -476,7 +476,7 @@
         }
 
         .download-link::after {
-            content: "↓";
+            content: "-";
             font-size: 1.1rem;
             transition: transform 0.2s ease;
         }
@@ -490,7 +490,7 @@
         }
 
         .download-link.disabled::after {
-            content: "—";
+            content: "-";
         }
 
         .download-link:not(.disabled):hover {

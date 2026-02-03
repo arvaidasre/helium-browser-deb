@@ -212,7 +212,7 @@ publish_apt() {
 
   # For amd64 - scan only amd64 packages
   log "Generating amd64 Packages file..."
-  if ! dpkg-scanpackages pool/main-amd64 > dists/stable/main/binary-amd64/Packages 2>&1; then
+  if ! dpkg-scanpackages pool/main-amd64 > dists/stable/main/binary-amd64/Packages; then
     err "dpkg-scanpackages failed for amd64"
   fi
   if [[ -s dists/stable/main/binary-amd64/Packages ]]; then
@@ -226,7 +226,7 @@ publish_apt() {
 
   # For arm64 - scan only arm64 packages
   log "Generating arm64 Packages file..."
-  if ! dpkg-scanpackages pool/main-arm64 > dists/stable/main/binary-arm64/Packages 2>&1; then
+  if ! dpkg-scanpackages pool/main-arm64 > dists/stable/main/binary-arm64/Packages; then
     err "dpkg-scanpackages failed for arm64"
   fi
   if [[ -s dists/stable/main/binary-arm64/Packages ]]; then

@@ -1,14 +1,14 @@
 name: Healthcheck and Auto-Repair
 
-# Kas valanda tikrina ar APT/RPM repo veikia ir triggerinam rebuild jei sugedo
+# Checks hourly whether APT/RPM repos are healthy and triggers a rebuild if needed.
 on:
   schedule:
-    - cron: "30 * * * *"  # Kas valanda ties 30 min
+    - cron: "30 * * * *"  # Every hour at minute 30
   workflow_dispatch:
 
 jobs:
   healthcheck:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     permissions:
       actions: write
       contents: read
