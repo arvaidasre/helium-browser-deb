@@ -18,6 +18,20 @@ log() { echo -e "\033[1;34m[PUBLISH]\033[0m $*"; }
 err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
 warn() { echo -e "\033[1;33m[WARN]\033[0m $*"; }
 
+validate_packages_file() {
+  local file="$1"
+  [[ -s "$file" ]] || err "Packages file is empty: $file"
+  if ! grep -q '^Package:' "$file"; then
+    err "Packages file has no Package headers: $file"
+  fi
+
+  # Ensure every stanza contains a Package header to avoid apt parsing errors.
+  awk -v RS='' '
+    $0 !~ /^Package:/ { bad++ }
+    END { if (bad > 0) exit 1 }
+  ' "$file" || err "Packages file contains invalid stanza(s): $file"
+}
+
 die_with_restore() {
   warn "Publish failed - restoring previous repo state"
   if [[ -d "$CURRENT_DIR" ]]; then
@@ -216,6 +230,7 @@ publish_apt() {
     err "dpkg-scanpackages failed for amd64"
   fi
   if [[ -s dists/stable/main/binary-amd64/Packages ]]; then
+    validate_packages_file dists/stable/main/binary-amd64/Packages
     if ! gzip -k -f dists/stable/main/binary-amd64/Packages 2>/dev/null; then
       err "Failed to gzip amd64 Packages"
     fi
@@ -230,6 +245,7 @@ publish_apt() {
     err "dpkg-scanpackages failed for arm64"
   fi
   if [[ -s dists/stable/main/binary-arm64/Packages ]]; then
+    validate_packages_file dists/stable/main/binary-arm64/Packages
     if ! gzip -k -f dists/stable/main/binary-arm64/Packages 2>/dev/null; then
       err "Failed to gzip arm64 Packages"
     fi

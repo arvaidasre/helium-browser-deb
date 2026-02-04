@@ -1,0 +1,77 @@
+name: Test APT Repo
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Upstream version tag (e.g. 0.8.1.1 or v0.8.1.1)'
+        required: true
+        type: string
+      dists:
+        description: 'APT dists to publish (space-separated)'
+        required: false
+        default: 'stable'
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  UPSTREAM_REPO: imputnet/helium-linux
+
+jobs:
+  test-apt-repo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq dpkg-dev curl apt-utils ruby ruby-dev build-essential rpm
+          sudo gem install fpm
+
+      - name: Build packages (amd64)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARCH_OVERRIDE: amd64
+          UPSTREAM_TAG: ${{ github.event.inputs.version }}
+          FORCE_BUILD: true
+        run: |
+          chmod +x scripts/*/*.sh
+          ./scripts/build/build.sh
+
+      - name: Build packages (arm64)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARCH_OVERRIDE: arm64
+          UPSTREAM_TAG: ${{ github.event.inputs.version }}
+          FORCE_BUILD: true
+        run: |
+          chmod +x scripts/*/*.sh
+          ./scripts/build/build.sh
+
+      - name: Generate APT repo
+        env:
+          APT_DISTS: ${{ github.event.inputs.dists }}
+        run: |
+          chmod +x scripts/*/*.sh
+          rm -rf site/public/apt
+          ./scripts/repo/apt.sh site/public/apt
+
+      - name: Validate Packages files
+        run: |
+          set -euo pipefail
+          for f in site/public/apt/dists/stable/main/binary-*/Packages; do
+            echo "Checking $f"
+            test -s "$f"
+            grep -q '^Package:' "$f"
+          done
+
+      - name: Upload APT repo artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apt-repo-test
+          retention-days: 3
+          path: site/public/apt

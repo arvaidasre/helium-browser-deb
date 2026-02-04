@@ -16,6 +16,20 @@ log() { echo -e "\033[1;34m[APT-REPO]\033[0m $*"; }
 warn() { echo -e "\033[1;33m[WARN]\033[0m $*"; }
 err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
 
+validate_packages_file() {
+  local file="$1"
+  [[ -s "$file" ]] || err "Packages file is empty: $file"
+  if ! grep -q '^Package:' "$file"; then
+    err "Packages file has no Package headers: $file"
+  fi
+
+  # Ensure every stanza contains a Package header to avoid apt parsing errors.
+  awk -v RS='' '
+    $0 !~ /^Package:/ { bad++ }
+    END { if (bad > 0) exit 1 }
+  ' "$file" || err "Packages file contains invalid stanza(s): $file"
+}
+
 check_deps() {
   local deps=(dpkg-scanpackages dpkg-scansources gzip)
   for cmd in "${deps[@]}"; do
@@ -75,6 +89,7 @@ if ! dpkg-scanpackages pool/main | awk -v RS='' -v ORS='\n\n' '/Architecture: (a
   warn "dpkg-scanpackages failed for amd64"
 fi
 if [[ -s "dists/stable/main/binary-amd64/Packages" ]]; then
+  validate_packages_file "dists/stable/main/binary-amd64/Packages"
   if ! gzip -k -f "dists/stable/main/binary-amd64/Packages" 2>/dev/null; then
     err "Failed to gzip amd64 Packages"
   fi
@@ -87,6 +102,7 @@ if ! dpkg-scanpackages pool/main | awk -v RS='' -v ORS='\n\n' '/Architecture: (a
   warn "dpkg-scanpackages failed for arm64"
 fi
 if [[ -s "dists/stable/main/binary-arm64/Packages" ]]; then
+  validate_packages_file "dists/stable/main/binary-arm64/Packages"
   if ! gzip -k -f "dists/stable/main/binary-arm64/Packages" 2>/dev/null; then
     err "Failed to gzip arm64 Packages"
   fi
