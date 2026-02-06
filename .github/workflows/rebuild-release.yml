@@ -150,7 +150,7 @@ jobs:
           path: |
             dist/*.deb
             dist/*.rpm
-            dist/SHA256SUMS
+            dist/SHA256SUMS*
             dist/meta.env
             dist/release_title.txt
             dist/release_notes.md
@@ -203,6 +203,17 @@ jobs:
           fi
           
           RELEASE_TITLE=$(cat dist/release_title.txt 2>/dev/null || echo "$TAG")
+          shopt -s nullglob
+          RELEASE_ASSETS=(dist/*.deb dist/*.rpm)
+          if [[ -f "dist/SHA256SUMS" ]]; then
+            RELEASE_ASSETS+=(dist/SHA256SUMS)
+          else
+            echo "Warning: dist/SHA256SUMS not found, creating release without checksum file."
+          fi
+          if [[ "${#RELEASE_ASSETS[@]}" -eq 0 ]]; then
+            echo "No release assets found in dist/"
+            exit 1
+          fi
           
           echo "Creating release: $TAG"
           
@@ -211,12 +222,12 @@ jobs:
               --title "$RELEASE_TITLE" \
               --notes-file dist/release_notes.md \
               --prerelease \
-              dist/*.deb dist/*.rpm dist/SHA256SUMS
+              "${RELEASE_ASSETS[@]}"
           else
             gh release create "$TAG" \
               --title "$RELEASE_TITLE" \
               --notes-file dist/release_notes.md \
-              dist/*.deb dist/*.rpm dist/SHA256SUMS
+              "${RELEASE_ASSETS[@]}"
           fi
           
           echo "Release created successfully: $TAG"
