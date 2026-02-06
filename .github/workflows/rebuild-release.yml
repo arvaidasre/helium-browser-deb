@@ -5,8 +5,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g. 0.7.10.1 or 0.8.1.1)'
-        required: true
+        description: 'Version (e.g. 0.7.10.1 or 0.8.1.1). Leave blank for latest.'
+        required: false
         type: string
       replace_existing:
         description: 'Replace existing release if it exists'
@@ -49,20 +49,38 @@ jobs:
           set -euo pipefail
           
           VERSION="${{ github.event.inputs.version }}"
-          
-          # Normalize version (remove 'v' prefix if present)
-          TAG="${VERSION#v}"
-          
-          echo "Checking if version $TAG exists in upstream repo..."
-          
-          # Check if release exists upstream
-          HTTP_CODE=$(curl -sS -o /tmp/release.json -w "%{http_code}" \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${UPSTREAM_REPO}/releases/tags/${TAG}")
-          
-          if [[ "$HTTP_CODE" != "200" ]]; then
-            echo "::error::Version $TAG not found in upstream repository $UPSTREAM_REPO"
-            exit 1
+
+          if [[ -z "$VERSION" ]]; then
+            echo "No version provided. Resolving latest release from upstream..."
+            HTTP_CODE=$(curl -sS -o /tmp/release.json -w "%{http_code}" \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              "https://api.github.com/repos/${UPSTREAM_REPO}/releases/latest")
+
+            if [[ "$HTTP_CODE" != "200" ]]; then
+              echo "::error::Failed to fetch latest release from upstream repository $UPSTREAM_REPO"
+              exit 1
+            fi
+
+            TAG=$(jq -r '.tag_name // empty' /tmp/release.json)
+            if [[ -z "$TAG" || "$TAG" == "null" ]]; then
+              echo "::error::Upstream latest release has no tag_name"
+              exit 1
+            fi
+          else
+            # Normalize version (remove 'v' prefix if present)
+            TAG="${VERSION#v}"
+
+            echo "Checking if version $TAG exists in upstream repo..."
+
+            # Check if release exists upstream
+            HTTP_CODE=$(curl -sS -o /tmp/release.json -w "%{http_code}" \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              "https://api.github.com/repos/${UPSTREAM_REPO}/releases/tags/${TAG}")
+
+            if [[ "$HTTP_CODE" != "200" ]]; then
+              echo "::error::Version $TAG not found in upstream repository $UPSTREAM_REPO"
+              exit 1
+            fi
           fi
           
           # Check if it's a prerelease
