@@ -170,10 +170,18 @@ jobs:
 
       - name: Merge checksums
         run: |
+          shopt -s nullglob
           if ls dist/SHA256SUMS-* 1>/dev/null 2>&1; then
             cat dist/SHA256SUMS-* > dist/SHA256SUMS
             rm dist/SHA256SUMS-*
             echo "Merged checksums into dist/SHA256SUMS"
+          fi
+          if [[ ! -f "dist/SHA256SUMS" ]]; then
+            FILES=(dist/*.deb dist/*.rpm)
+            if [[ "${#FILES[@]}" -gt 0 ]]; then
+              sha256sum "${FILES[@]}" > dist/SHA256SUMS
+              echo "Generated dist/SHA256SUMS"
+            fi
           fi
 
       - name: Delete existing release if requested
