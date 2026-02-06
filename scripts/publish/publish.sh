@@ -51,6 +51,21 @@ get_file_size() {
   fi
 }
 
+validate_rpm_metadata_dir() {
+  local dir="$1"
+  local repodata="$dir/repodata"
+
+  [[ -d "$repodata" ]] || err "Missing RPM repodata directory: $repodata"
+  [[ -s "$repodata/repomd.xml" ]] || err "Missing RPM repomd.xml: $repodata/repomd.xml"
+  grep -q '<repomd' "$repodata/repomd.xml" || err "Invalid RPM repomd.xml: $repodata/repomd.xml"
+
+  if ! compgen -G "$repodata/*primary*.*" >/dev/null && \
+     ! compgen -G "$repodata/*filelists*.*" >/dev/null && \
+     ! compgen -G "$repodata/*other*.*" >/dev/null; then
+    err "RPM metadata missing core files in $repodata"
+  fi
+}
+
 check_deps() {
   local deps=(dpkg-scanpackages gzip createrepo_c sha256sum)
   for cmd in "${deps[@]}"; do
@@ -226,7 +241,7 @@ publish_apt() {
 
   # For amd64 - scan only amd64 packages
   log "Generating amd64 Packages file..."
-  if ! dpkg-scanpackages pool/main-amd64 > dists/stable/main/binary-amd64/Packages; then
+  if ! dpkg-scanpackages pool/main-amd64 2>/dev/null | awk -v RS='' -v ORS='\n\n' '$0 ~ /^Package:/' > dists/stable/main/binary-amd64/Packages; then
     err "dpkg-scanpackages failed for amd64"
   fi
   if [[ -s dists/stable/main/binary-amd64/Packages ]]; then
@@ -241,7 +256,7 @@ publish_apt() {
 
   # For arm64 - scan only arm64 packages
   log "Generating arm64 Packages file..."
-  if ! dpkg-scanpackages pool/main-arm64 > dists/stable/main/binary-arm64/Packages; then
+  if ! dpkg-scanpackages pool/main-arm64 2>/dev/null | awk -v RS='' -v ORS='\n\n' '$0 ~ /^Package:/' > dists/stable/main/binary-arm64/Packages; then
     err "dpkg-scanpackages failed for arm64"
   fi
   if [[ -s dists/stable/main/binary-arm64/Packages ]]; then
@@ -353,6 +368,8 @@ publish_rpm() {
       else
         err "Neither createrepo_c nor createrepo found. Cannot generate RPM repository for $arch"
       fi
+
+      validate_rpm_metadata_dir "$RPM_REPO_DIR/$arch"
     else
       err "No RPM packages found for $arch in dist/"
     fi

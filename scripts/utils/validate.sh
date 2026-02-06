@@ -26,6 +26,21 @@ require_grep() {
   grep -qE "$pat" "$f" || err "Expected pattern '$pat' in $f"
 }
 
+require_rpm_metadata() {
+  local dir="$1"
+  local repodata="$dir/repodata"
+
+  require_dir "$repodata"
+  require_file "$repodata/repomd.xml"
+  require_grep "$repodata/repomd.xml" '<repomd'
+
+  if ! compgen -G "$repodata/*primary*.*" >/dev/null && \
+     ! compgen -G "$repodata/*filelists*.*" >/dev/null && \
+     ! compgen -G "$repodata/*other*.*" >/dev/null; then
+    err "RPM metadata missing core files in $repodata"
+  fi
+}
+
 check_file_integrity() {
   local f="$1"
   if [[ ! -f "$f" ]]; then
@@ -94,10 +109,8 @@ require_dir "$RPM_DIR"
 require_dir "$RPM_DIR/x86_64"
 require_dir "$RPM_DIR/aarch64"
 
-require_file "$RPM_DIR/x86_64/repodata/repomd.xml"
-require_file "$RPM_DIR/aarch64/repodata/repomd.xml"
-require_grep "$RPM_DIR/x86_64/repodata/repomd.xml" '<repomd'
-require_grep "$RPM_DIR/aarch64/repodata/repomd.xml" '<repomd'
+require_rpm_metadata "$RPM_DIR/x86_64"
+require_rpm_metadata "$RPM_DIR/aarch64"
 
 # Count packages
 rpm_x86_count=$(ls -1 "$RPM_DIR/x86_64"/*.rpm 2>/dev/null | wc -l || echo "0")

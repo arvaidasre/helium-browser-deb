@@ -85,7 +85,7 @@ log "Generating Packages files (with architecture filtering)..."
 cd "$REPO_DIR"
 
 # For amd64
-if ! dpkg-scanpackages --multiversion pool/main | awk -v RS='' -v ORS='\n\n' '/Architecture: (amd64|x86_64)/' > "dists/stable/main/binary-amd64/Packages"; then
+if ! dpkg-scanpackages --multiversion pool/main 2>/dev/null | awk -v RS='' -v ORS='\n\n' '$0 ~ /^Package:/ && /Architecture: (amd64|x86_64)/' > "dists/stable/main/binary-amd64/Packages"; then
   warn "dpkg-scanpackages failed for amd64"
 fi
 if [[ -s "dists/stable/main/binary-amd64/Packages" ]]; then
@@ -98,7 +98,7 @@ else
 fi
 
 # For arm64
-if ! dpkg-scanpackages --multiversion pool/main | awk -v RS='' -v ORS='\n\n' '/Architecture: (arm64|aarch64)/' > "dists/stable/main/binary-arm64/Packages"; then
+if ! dpkg-scanpackages --multiversion pool/main 2>/dev/null | awk -v RS='' -v ORS='\n\n' '$0 ~ /^Package:/ && /Architecture: (arm64|aarch64)/' > "dists/stable/main/binary-arm64/Packages"; then
   warn "dpkg-scanpackages failed for arm64"
 fi
 if [[ -s "dists/stable/main/binary-arm64/Packages" ]]; then
