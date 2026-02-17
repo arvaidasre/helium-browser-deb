@@ -1,77 +1,36 @@
 #!/usr/bin/env bash
+# ==============================================================================
+# validate.sh — Validate APT + RPM repository structure
+# ==============================================================================
 set -euo pipefail
 
-APT_DIR="${1:-site/public/apt}"
-RPM_DIR="${2:-site/public/rpm}"
-SITE_DIR="${3:-site/public}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# --- Helper Functions ---
-log() { echo -e "\033[1;34m[VALIDATE]\033[0m $*"; }
-err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
-warn() { echo -e "\033[1;33m[WARN]\033[0m $*"; }
+# shellcheck source=../lib/common.sh
+source "$SCRIPT_DIR/../lib/common.sh"
 
-require_file() {
-  local f="$1"
-  [[ -f "$f" ]] || err "Missing file: $f"
-}
+LOG_PREFIX="VALIDATE"
 
-require_dir() {
-  local d="$1"
-  [[ -d "$d" ]] || err "Missing directory: $d"
-}
+readonly APT_DIR="${1:-site/public/apt}"
+readonly RPM_DIR="${2:-site/public/rpm}"
+readonly SITE_DIR="${3:-site/public}"
 
-require_grep() {
-  local f="$1"
-  local pat="$2"
-  grep -qE "$pat" "$f" || err "Expected pattern '$pat' in $f"
-}
+# ── Local helpers ────────────────────────────────────────────────────────────
 
-require_rpm_metadata() {
-  local dir="$1"
-  local repodata="$dir/repodata"
+require_file() { [[ -f "$1" ]] || err "Missing file: $1"; }
+require_dir()  { [[ -d "$1" ]] || err "Missing directory: $1"; }
+require_grep() { grep -qE "$2" "$1" || err "Expected pattern '$2' in $1"; }
 
-  require_dir "$repodata"
-  require_file "$repodata/repomd.xml"
-  require_grep "$repodata/repomd.xml" '<repomd'
+# ── Site root ────────────────────────────────────────────────────────────────
 
-  if ! compgen -G "$repodata/*primary*.*" >/dev/null && \
-     ! compgen -G "$repodata/*filelists*.*" >/dev/null && \
-     ! compgen -G "$repodata/*other*.*" >/dev/null; then
-    err "RPM metadata missing core files in $repodata"
-  fi
-}
-
-check_file_integrity() {
-  local f="$1"
-  if [[ ! -f "$f" ]]; then
-    return 1
-  fi
-  
-  local size=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo "0")
-  if [[ "$size" -eq 0 ]]; then
-    warn "Empty file: $f"
-    return 1
-  fi
-  return 0
-}
-
-# --- Main ---
-
-log "Validating repositories..."
-log "APT repository: $APT_DIR"
-log "RPM repository: $RPM_DIR"
-log "Site root: $SITE_DIR"
-
-# Check site root files
-log ""
-log "Checking site root files..."
+section "Site root files"
 require_file "$SITE_DIR/index.html"
 require_file "$SITE_DIR/install.sh"
 require_file "$SITE_DIR/install-rpm.sh"
 
-# Check APT repository
-log ""
-log "Checking APT repository structure..."
+# ── APT repository ──────────────────────────────────────────────────────────
+
+section "APT repository structure"
 require_dir "$APT_DIR"
 require_dir "$APT_DIR/dists/stable/main/binary-amd64"
 require_dir "$APT_DIR/dists/stable/main/binary-arm64"
@@ -81,53 +40,45 @@ require_file "$APT_DIR/dists/stable/Release"
 require_grep "$APT_DIR/dists/stable/Release" '^Architectures: '
 require_grep "$APT_DIR/dists/stable/Release" '^Components: '
 
-require_file "$APT_DIR/dists/stable/main/binary-amd64/Packages"
-require_file "$APT_DIR/dists/stable/main/binary-amd64/Packages.gz"
-require_file "$APT_DIR/dists/stable/main/binary-arm64/Packages"
-require_file "$APT_DIR/dists/stable/main/binary-arm64/Packages.gz"
-# Sources file is optional for binary-only repos
-if [[ -f "$APT_DIR/dists/stable/main/Sources" ]]; then
-  log "Sources file found in APT repository"
-else
-  log "Sources file not found (optional for binary-only repos)"
-fi
+for arch in amd64 arm64; do
+  require_file "$APT_DIR/dists/stable/main/binary-$arch/Packages"
+  require_file "$APT_DIR/dists/stable/main/binary-$arch/Packages.gz"
+done
 
 log "Checking APT distribution aliases..."
 for dist in noble jammy focal bookworm bullseye; do
   require_file "$APT_DIR/dists/$dist/Release"
 done
 
-# Count packages
-apt_pkg_count=$(ls -1 "$APT_DIR/pool/main"/*.deb 2>/dev/null | wc -l || echo "0")
+apt_pkg_count="$(find "$APT_DIR/pool/main" -maxdepth 1 -name '*.deb' | wc -l)"
 log "APT packages in pool: $apt_pkg_count"
-[[ "$apt_pkg_count" -gt 0 ]] || err "No APT packages found."
+(( apt_pkg_count > 0 )) || err "No APT packages found."
 
-# Check RPM repository
-log ""
-log "Checking RPM repository structure..."
+# ── RPM repository ──────────────────────────────────────────────────────────
+
+section "RPM repository structure"
 require_dir "$RPM_DIR"
 require_dir "$RPM_DIR/x86_64"
 require_dir "$RPM_DIR/aarch64"
 
-require_rpm_metadata "$RPM_DIR/x86_64"
-require_rpm_metadata "$RPM_DIR/aarch64"
+validate_rpm_metadata "$RPM_DIR/x86_64"
+validate_rpm_metadata "$RPM_DIR/aarch64"
 
-# Count packages
-rpm_x86_count=$(ls -1 "$RPM_DIR/x86_64"/*.rpm 2>/dev/null | wc -l || echo "0")
-rpm_arm_count=$(ls -1 "$RPM_DIR/aarch64"/*.rpm 2>/dev/null | wc -l || echo "0")
-log "RPM packages x86_64: $rpm_x86_count"
-log "RPM packages aarch64: $rpm_arm_count"
-[[ "$rpm_x86_count" -gt 0 ]] || err "No RPM x86_64 packages found."
-[[ "$rpm_arm_count" -gt 0 ]] || err "No RPM aarch64 packages found."
+rpm_x86="$(find "$RPM_DIR/x86_64" -maxdepth 1 -name '*.rpm' | wc -l)"
+rpm_arm="$(find "$RPM_DIR/aarch64" -maxdepth 1 -name '*.rpm' | wc -l)"
+log "RPM packages x86_64: $rpm_x86"
+log "RPM packages aarch64: $rpm_arm"
+(( rpm_x86 > 0 )) || err "No RPM x86_64 packages found."
+(( rpm_arm > 0 )) || err "No RPM aarch64 packages found."
 
-# Check manifest
-log ""
+# ── Manifest ─────────────────────────────────────────────────────────────────
+
+section "Optional checks"
 if [[ -f "$SITE_DIR/MANIFEST.txt" ]]; then
-  log "Manifest file found: $SITE_DIR/MANIFEST.txt"
+  log "[OK] Manifest: $SITE_DIR/MANIFEST.txt"
 else
-  warn "Manifest file not found (optional)"
+  warn "Manifest not found (optional)"
 fi
 
-log ""
-log "Validation completed successfully!"
-log "All repositories are properly configured and ready for use."
+section "Validation passed"
+log "All repositories are properly configured."

@@ -1,76 +1,61 @@
-#!/bin/bash
-# Helium Browser One-Liner Installer for APT (Debian/Ubuntu)
+#!/usr/bin/env bash
+# ==============================================================================
+# Helium Browser — One-liner installer for Debian / Ubuntu / Mint
 # Usage: curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install.sh | bash
-
+# ==============================================================================
 set -euo pipefail
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-log() { echo -e "${GREEN}[INFO]${NC} $1"; }
-warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
-error() { echo -e "${RED}[ERROR]${NC} $1" >&2; exit 1; }
-
-# Check if running as root
-if [[ $EUID -eq 0 ]]; then
-    SUDO=""
+# ── Colours (auto-detect terminal) ───────────────────────────────────────────
+if [[ -t 1 ]]; then
+  C_GREEN='\033[0;32m' C_YELLOW='\033[1;33m' C_RED='\033[0;31m'
+  C_BLUE='\033[0;34m'  C_RESET='\033[0m'
 else
-    SUDO="sudo"
+  C_GREEN='' C_YELLOW='' C_RED='' C_BLUE='' C_RESET=''
 fi
 
-# Detect architecture
-ARCH=$(dpkg --print-architecture 2>/dev/null || echo "amd64")
-log "Detected architecture: $ARCH"
+log()  { echo -e "${C_GREEN}[INFO]${C_RESET} $*"; }
+warn() { echo -e "${C_YELLOW}[WARN]${C_RESET} $*"; }
+err()  { echo -e "${C_RED}[ERROR]${C_RESET} $*" >&2; exit 1; }
 
-# Check if apt is available
-if ! command -v apt-get >/dev/null 2>&1; then
-    error "apt-get not found. This script is for Debian/Ubuntu systems only."
-fi
+# ── Privilege handling ───────────────────────────────────────────────────────
+SUDO=""
+(( EUID != 0 )) && SUDO="sudo"
 
-# Repository URL
-REPO_URL="https://arvaidasre.github.io/helium-browser-deb/apt"
-LIST_FILE="/etc/apt/sources.list.d/helium-browser.list"
+# ── Architecture ─────────────────────────────────────────────────────────────
+ARCH="$(dpkg --print-architecture 2>/dev/null || echo "amd64")"
+log "Architecture: $ARCH"
 
-# Check if already installed
-if dpkg -l | grep -q "^ii.*helium-browser"; then
-    CURRENT_VERSION=$(dpkg -l | grep helium-browser | awk '{print $3}')
-    log "Helium Browser is already installed (version: $CURRENT_VERSION)"
-    log "Updating to latest version..."
+command -v apt-get >/dev/null 2>&1 || err "apt-get not found. This script is for Debian/Ubuntu systems."
+
+# ── Configuration ────────────────────────────────────────────────────────────
+readonly REPO_URL="https://arvaidasre.github.io/helium-browser-deb/apt"
+readonly LIST_FILE="/etc/apt/sources.list.d/helium-browser.list"
+
+# ── Install / Update ────────────────────────────────────────────────────────
+if dpkg -l helium-browser 2>/dev/null | grep -q '^ii'; then
+  current="$(dpkg -l helium-browser | awk '/^ii/{print $3}')"
+  log "Already installed (version: $current) — updating..."
 else
-    log "Installing Helium Browser..."
+  log "Installing Helium Browser..."
 fi
 
-# Remove old repository entry if exists (for clean reinstall)
-if [[ -f "$LIST_FILE" ]]; then
-    log "Removing old repository configuration..."
-    $SUDO rm -f "$LIST_FILE"
-fi
+# Clean old source entry
+[[ -f "$LIST_FILE" ]] && $SUDO rm -f "$LIST_FILE"
 
-# Add repository
-log "Adding Helium Browser repository..."
-echo "deb [arch=$ARCH trusted=yes] $REPO_URL stable main" | $SUDO tee "$LIST_FILE" > /dev/null
+log "Adding repository..."
+echo "deb [arch=$ARCH trusted=yes] $REPO_URL stable main" | $SUDO tee "$LIST_FILE" >/dev/null
 
-# Update package list
 log "Updating package list..."
 $SUDO apt-get update -qq
 
-# Install Helium Browser
-log "Installing helium-browser package..."
+log "Installing helium-browser..."
 $SUDO apt-get install -y helium-browser
 
-# Verify installation
+# ── Verify ───────────────────────────────────────────────────────────────────
 if command -v helium >/dev/null 2>&1; then
-    log "Helium Browser has been successfully installed!"
-    echo ""
-    echo -e "${BLUE}Launch Helium Browser:${NC}"
-    echo "  - From applications menu, or"
-    echo "  - Run 'helium' in terminal"
-    echo ""
+  log "Helium Browser installed successfully!"
+  echo ""
+  echo -e "${C_BLUE}Launch:${C_RESET} run 'helium' or use your applications menu."
 else
-    warn "Installation completed but 'helium' command not found in PATH."
-    warn "Try launching from /usr/bin/helium or restart your terminal."
+  warn "'helium' command not in PATH — try /usr/bin/helium or restart your terminal."
 fi

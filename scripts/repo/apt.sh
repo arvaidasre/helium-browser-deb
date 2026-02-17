@@ -1,173 +1,135 @@
 #!/usr/bin/env bash
+# ==============================================================================
+# apt.sh — Generate an APT repository from packages in dist/
+# ==============================================================================
+# Usage: ./apt.sh [REPO_DIR]
+#
+# Publishes the same pool under multiple APT distributions so users can specify
+# their system codename (noble, jammy, etc.) while keeping a single pool.
+# Override in CI: APT_DISTS="stable noble jammy" ./scripts/repo/apt.sh
+# ==============================================================================
 set -euo pipefail
 
-# --- Configuration ---
-REPO_NAME="helium-browser"
-REPO_URL="https://arvaidasre.github.io/helium-browser-deb"
-REPO_DIR="${1:-site/public/apt}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Publish the same repo content under multiple APT distributions.
-# This lets users use their system codename (e.g. noble, jammy) while keeping one pool.
-# Override in CI via: APT_DISTS="stable noble jammy" ./tools/generate-apt-repo.sh
-APT_DISTS_DEFAULT=(stable noble jammy focal bookworm bullseye)
+# shellcheck source=../lib/common.sh
+source "$SCRIPT_DIR/../lib/common.sh"
 
-# --- Helper Functions ---
-log() { echo -e "\033[1;34m[APT-REPO]\033[0m $*"; }
-warn() { echo -e "\033[1;33m[WARN]\033[0m $*"; }
-err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
+LOG_PREFIX="APT-REPO"
 
-validate_packages_file() {
-  local file="$1"
-  [[ -s "$file" ]] || err "Packages file is empty: $file"
-  if ! grep -q '^Package:' "$file"; then
-    err "Packages file has no Package headers: $file"
-  fi
+readonly REPO_DIR="${1:-site/public/apt}"
+readonly APT_DISTS_DEFAULT=(stable noble jammy focal bookworm bullseye)
 
-  # Ensure every stanza contains a Package header to avoid apt parsing errors.
-  awk -v RS='' '
-    $0 !~ /^Package:/ { bad++ }
-    END { if (bad > 0) exit 1 }
-  ' "$file" || err "Packages file contains invalid stanza(s): $file"
-}
+# ── Dependencies ──────────────────────────────────────────────────────────────
 
-check_deps() {
-  local deps=(dpkg-scanpackages dpkg-scansources gzip)
-  for cmd in "${deps[@]}"; do
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-      err "Missing dependency: $cmd (install with: sudo apt-get install dpkg-dev)"
-    fi
-  done
-}
+check_deps dpkg-scanpackages gzip
 
-# --- Main Logic ---
+# ── Resolve dist list ─────────────────────────────────────────────────────────
 
-check_deps
-
-log "Generating APT repository in $REPO_DIR..."
-
-APT_DISTS_ENV="${APT_DISTS:-}"
-if [[ -n "$APT_DISTS_ENV" ]]; then
-  # Split by whitespace
+if [[ -n "${APT_DISTS:-}" ]]; then
   # shellcheck disable=SC2206
-  APT_DISTS=($APT_DISTS_ENV)
+  APT_DISTS=($APT_DISTS)
 else
   APT_DISTS=("${APT_DISTS_DEFAULT[@]}")
 fi
 
-# Create directory structure
-mkdir -p "$REPO_DIR/dists/stable/main/binary-amd64"
-mkdir -p "$REPO_DIR/dists/stable/main/binary-arm64"
-mkdir -p "$REPO_DIR/pool/main"
+# ── Directory structure ───────────────────────────────────────────────────────
 
-# Copy .deb files from dist/ to pool/main
-if [[ -d "dist" ]]; then
-  for deb in dist/*.deb; do
-    if [[ -f "$deb" ]]; then
-      log "Copying $(basename "$deb") to pool..."
-      cp "$deb" "$REPO_DIR/pool/main/"
-    fi
-  done
-else
-  err "dist/ directory not found. Aborting to avoid empty repo."
-fi
+log "Generating APT repository in $REPO_DIR..."
 
-# Require packages for each arch
-if ! ls -A "$REPO_DIR/pool/main"/*amd64*.deb >/dev/null 2>&1 && ! ls -A "$REPO_DIR/pool/main"/*x86_64*.deb >/dev/null 2>&1; then
-  err "No amd64 .deb packages found in dist/."
-fi
+mkdir -p "$REPO_DIR/dists/stable/main/binary-amd64" \
+         "$REPO_DIR/dists/stable/main/binary-arm64" \
+         "$REPO_DIR/pool/main"
 
-if ! ls -A "$REPO_DIR/pool/main"/*arm64*.deb >/dev/null 2>&1 && ! ls -A "$REPO_DIR/pool/main"/*aarch64*.deb >/dev/null 2>&1; then
-  err "No arm64 .deb packages found in dist/."
-fi
+# Copy .deb files from dist/
+[[ -d "dist" ]] || err "dist/ directory not found."
 
-# Generate Packages files
-log "Generating Packages files (with architecture filtering)..."
+for deb in dist/*.deb; do
+  [[ -f "$deb" ]] || continue
+  log "Copying $(basename "$deb") to pool..."
+  cp "$deb" "$REPO_DIR/pool/main/"
+done
+
+# Ensure both architectures are present
+ls -A "$REPO_DIR/pool/main"/*amd64*.deb  >/dev/null 2>&1 \
+  || ls -A "$REPO_DIR/pool/main"/*x86_64*.deb >/dev/null 2>&1 \
+  || err "No amd64 .deb packages found."
+
+ls -A "$REPO_DIR/pool/main"/*arm64*.deb  >/dev/null 2>&1 \
+  || ls -A "$REPO_DIR/pool/main"/*aarch64*.deb >/dev/null 2>&1 \
+  || err "No arm64 .deb packages found."
+
+# ── Generate Packages ────────────────────────────────────────────────────────
+
 cd "$REPO_DIR"
 
-# For amd64
-if ! dpkg-scanpackages --multiversion pool/main 2>/dev/null | awk -v RS='' -v ORS='\n\n' '$0 ~ /^Package:/ && /Architecture: (amd64|x86_64)/' > "dists/stable/main/binary-amd64/Packages"; then
-  warn "dpkg-scanpackages failed for amd64"
-fi
-if [[ -s "dists/stable/main/binary-amd64/Packages" ]]; then
-  validate_packages_file "dists/stable/main/binary-amd64/Packages"
-  if ! gzip -k -f "dists/stable/main/binary-amd64/Packages" 2>/dev/null; then
-    err "Failed to gzip amd64 Packages"
-  fi
-else
-  err "No amd64 packages found in pool/main"
-fi
+for arch_pair in "amd64:amd64|x86_64" "arm64:arm64|aarch64"; do
+  arch="${arch_pair%%:*}"
+  pattern="${arch_pair#*:}"
 
-# For arm64
-if ! dpkg-scanpackages --multiversion pool/main 2>/dev/null | awk -v RS='' -v ORS='\n\n' '$0 ~ /^Package:/ && /Architecture: (arm64|aarch64)/' > "dists/stable/main/binary-arm64/Packages"; then
-  warn "dpkg-scanpackages failed for arm64"
-fi
-if [[ -s "dists/stable/main/binary-arm64/Packages" ]]; then
-  validate_packages_file "dists/stable/main/binary-arm64/Packages"
-  if ! gzip -k -f "dists/stable/main/binary-arm64/Packages" 2>/dev/null; then
-    err "Failed to gzip arm64 Packages"
-  fi
-else
-  err "No arm64 packages found in pool/main"
-fi
+  log "Generating $arch Packages..."
+  dpkg-scanpackages --multiversion pool/main 2>/dev/null \
+    | awk -v RS='' -v ORS='\n\n' "\$0 ~ /^Package:/ && /Architecture: ($pattern)/" \
+    > "dists/stable/main/binary-$arch/Packages" || true
 
-# Generate Sources file (optional, but good practice) - don't fail if it doesn't work
-if [[ -n "$(ls -A pool/main/*.deb 2>/dev/null)" ]]; then
-  if dpkg-scansources pool/main > "dists/stable/main/Sources" 2>/dev/null; then
-    gzip -k -f "dists/stable/main/Sources" 2>/dev/null || warn "Failed to gzip Sources"
+  if [[ -s "dists/stable/main/binary-$arch/Packages" ]]; then
+    validate_packages_file "dists/stable/main/binary-$arch/Packages"
+    gzip -k -f "dists/stable/main/binary-$arch/Packages" || err "Failed to gzip $arch Packages"
   else
-    warn "Failed to generate Sources file (this is optional)"
+    err "No $arch packages found in pool/main"
   fi
+done
+
+# Optional Sources file
+if dpkg-scansources pool/main > "dists/stable/main/Sources" 2>/dev/null; then
+  gzip -k -f "dists/stable/main/Sources" 2>/dev/null || warn "Failed to gzip Sources"
 else
-  warn "No .deb files found for Sources generation (this is optional)"
+  warn "Sources generation skipped (optional)"
 fi
 
-# Generate Release file
+# ── Release file ──────────────────────────────────────────────────────────────
+
 log "Generating Release file..."
-release_date=$(LC_ALL=C date -u +"%a, %d %b %Y %H:%M:%S %Z")
-cat > "dists/stable/Release" <<EOF
-Origin: $REPO_NAME
-Label: $REPO_NAME
+release_date="$(LC_ALL=C date -u +'%a, %d %b %Y %H:%M:%S %Z')"
+
+cat > "dists/stable/Release" <<RELEASE
+Origin: ${HELIUM_PACKAGE_NAME}
+Label: ${HELIUM_PACKAGE_NAME}
 Suite: stable
 Codename: stable
 Architectures: amd64 arm64
 Components: main
 Description: Helium Browser Repository
-Date: $release_date
-EOF
+Date: ${release_date}
+RELEASE
 
-# Add checksums (always add, even if files are empty)
-# Use relative paths from Release file location
 {
   echo "MD5Sum:"
   for f in dists/stable/main/binary-*/Packages* dists/stable/main/Sources*; do
-    if [[ -f "$f" ]]; then
-      SIZE=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo "0")
-      HASH=$(md5sum "$f" | cut -d' ' -f1)
-      REL_PATH="${f#dists/stable/}"
-      printf " %s %8s %s\n" "$HASH" "$SIZE" "$REL_PATH"
-    fi
+    [[ -f "$f" ]] || continue
+    printf " %s %8s %s\n" \
+      "$(md5sum "$f" | cut -d' ' -f1)" \
+      "$(file_size "$f")" \
+      "${f#dists/stable/}"
   done
   echo "SHA256:"
   for f in dists/stable/main/binary-*/Packages* dists/stable/main/Sources*; do
-    if [[ -f "$f" ]]; then
-      SIZE=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo "0")
-      HASH=$(sha256sum "$f" | cut -d' ' -f1)
-      REL_PATH="${f#dists/stable/}"
-      printf " %s %8s %s\n" "$HASH" "$SIZE" "$REL_PATH"
-    fi
+    [[ -f "$f" ]] || continue
+    printf " %s %8s %s\n" \
+      "$(sha256sum "$f" | cut -d' ' -f1)" \
+      "$(file_size "$f")" \
+      "${f#dists/stable/}"
   done
 } >> "dists/stable/Release"
 
-# Create per-codename distributions as copies of stable
+# ── Distribution aliases ─────────────────────────────────────────────────────
+
 log "Publishing distributions: ${APT_DISTS[*]}"
 for dist in "${APT_DISTS[@]}"; do
   [[ "$dist" == "stable" ]] && continue
-
   rm -rf "dists/$dist"
   mkdir -p "dists/$dist"
   cp -a "dists/stable/"* "dists/$dist/"
-
-  # Adjust metadata headers (checksums stay valid because files are identical)
   if [[ -f "dists/$dist/Release" ]]; then
     sed -i \
       -e "s/^Suite: .*/Suite: $dist/" \
@@ -176,8 +138,5 @@ for dist in "${APT_DISTS[@]}"; do
   fi
 done
 
-log "APT repository generated successfully!"
-log "Repository location: $REPO_DIR"
-log ""
-log "To use this repository, add to /etc/apt/sources.list.d/helium.list:"
-log "  deb [arch=amd64,arm64] $REPO_URL/apt <codename|stable> main"
+log "APT repository generated: $REPO_DIR"
+log "Usage: deb [arch=amd64,arm64] ${HELIUM_REPO_URL}/apt <codename|stable> main"

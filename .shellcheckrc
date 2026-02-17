@@ -1,0 +1,8 @@
+# ShellCheck configuration — https://www.shellcheck.net
+# Applied automatically when running `shellcheck scripts/**/*.sh`
+
+# Allow sourcing from dynamic paths (common in this repo)
+external-sources=true
+
+# Disable SC2034 (unused variables) in library files — they export symbols
+# Disable via inline comments where needed instead of globally

@@ -1,319 +1,244 @@
 #!/usr/bin/env bash
+# ==============================================================================
+# sync.sh — Fetch upstream releases and create local metadata
+# ==============================================================================
 set -euo pipefail
 
-# --- Configuration ---
-UPSTREAM_REPO="imputnet/helium-linux"
-UPSTREAM_URL="https://github.com/$UPSTREAM_REPO"
-GITHUB_API="https://api.github.com/repos/$UPSTREAM_REPO"
-SYNC_DIR="${SYNC_DIR:-sync}"
-RELEASES_DIR="${RELEASES_DIR:-releases}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# --- Helper Functions ---
-log() { echo -e "\033[1;34m[SYNC]\033[0m $*"; }
-err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
-warn() { echo -e "\033[1;33m[WARN]\033[0m $*"; }
+# shellcheck source=../lib/common.sh
+source "$SCRIPT_DIR/../lib/common.sh"
 
-check_deps() {
-  local deps=(curl jq git)
-  for cmd in "${deps[@]}"; do
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-      err "Missing dependency: $cmd"
-    fi
-  done
-}
+LOG_PREFIX="SYNC"
+
+readonly SYNC_DIR="${SYNC_DIR:-sync}"
+readonly RELEASES_DIR="${RELEASES_DIR:-releases}"
+
+# ── Dependencies ──────────────────────────────────────────────────────────────
+
+check_deps curl jq git
+
+# ── Fetch all releases (paginated) ───────────────────────────────────────────
 
 fetch_releases() {
-  log "Fetching releases from $UPSTREAM_REPO..."
-  
+  log "Fetching releases from ${HELIUM_UPSTREAM_REPO}..."
   mkdir -p "$SYNC_DIR"
-  
-  local page=1
-  local per_page=100
-  local total_releases=0
-  
+
+  local page=1 per_page=100 total=0 count
+
   while true; do
     log "Fetching page $page..."
-    
-    local url="$GITHUB_API/releases?page=$page&per_page=$per_page"
+    local url="https://api.github.com/repos/${HELIUM_UPSTREAM_REPO}/releases?page=${page}&per_page=${per_page}"
     local response
-    
-    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-      response=$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" "$url")
-    else
-      response=$(curl -fsSL "$url")
-    fi
-    
-    # Check if response is empty array
-    if [[ "$response" == "[]" ]]; then
-      break
-    fi
-    
-    # Save page to file
+    response="$(github_api_get "$url")"
+
+    [[ "$response" == "[]" ]] && break
     echo "$response" > "$SYNC_DIR/releases_page_${page}.json"
-    
-    local count=$(echo "$response" | jq 'length')
-    total_releases=$((total_releases + count))
-    
+
+    count="$(jq 'length' <<<"$response")"
+    total=$(( total + count ))
     log "Page $page: $count releases"
-    
-    if [[ $count -lt $per_page ]]; then
-      break
-    fi
-    
-    ((page++))
+
+    (( count < per_page )) && break
+    (( page++ ))
   done
-  
-  log "Total releases fetched: $total_releases"
+
+  log "Total releases fetched: $total"
 }
 
+# ── Merge pages into one file ────────────────────────────────────────────────
+
 merge_releases() {
-  log "Merging releases into single file..."
-  
-  local merged_file="$SYNC_DIR/all_releases.json"
-  
-  # Combine all pages into single array
-  jq -s 'add' "$SYNC_DIR"/releases_page_*.json > "$merged_file"
-  
-  log "Merged releases: $merged_file"
+  log "Merging into single file..."
+  jq -s 'add' "$SYNC_DIR"/releases_page_*.json > "$SYNC_DIR/all_releases.json"
 }
+
+# ── Create per-release metadata ──────────────────────────────────────────────
 
 process_releases() {
   log "Processing releases..."
-  
   mkdir -p "$RELEASES_DIR"
-  
-  local merged_file="$SYNC_DIR/all_releases.json"
-  local release_count=$(jq 'length' "$merged_file")
-  
-  log "Processing $release_count releases..."
-  
-  for i in $(seq 0 $((release_count - 1))); do
-    local release=$(jq ".[$i]" "$merged_file")
-    local tag=$(echo "$release" | jq -r '.tag_name')
-    local name=$(echo "$release" | jq -r '.name // .tag_name')
-    local body=$(echo "$release" | jq -r '.body // ""')
-    local created_at=$(echo "$release" | jq -r '.created_at')
-    local published_at=$(echo "$release" | jq -r '.published_at')
-    local prerelease=$(echo "$release" | jq -r '.prerelease')
-    local draft=$(echo "$release" | jq -r '.draft')
-    local author=$(echo "$release" | jq -r '.author.login')
-    local asset_count=$(echo "$release" | jq '.assets | length')
-    
-    # Create release directory
-    local release_dir="$RELEASES_DIR/$tag"
-    mkdir -p "$release_dir"
-    
-    # Save release metadata
-    cat > "$release_dir/metadata.json" <<EOF
-{
-  "tag": "$tag",
-  "name": "$name",
-  "author": "$author",
-  "created_at": "$created_at",
-  "published_at": "$published_at",
-  "prerelease": $prerelease,
-  "draft": $draft,
-  "asset_count": $asset_count,
-  "upstream_url": "$UPSTREAM_URL/releases/tag/$tag"
-}
-EOF
-    
-    # Save release notes
-    echo "$body" > "$release_dir/RELEASE_NOTES.md"
-    
-    # Save assets list
-    echo "$release" | jq '.assets[] | {name, size, download_count, browser_download_url}' > "$release_dir/assets.json"
-    
+
+  local merged="$SYNC_DIR/all_releases.json"
+  local count
+  count="$(jq 'length' "$merged")"
+
+  for (( i = 0; i < count; i++ )); do
+    local release
+    release="$(jq ".[$i]" "$merged")"
+
+    local tag name body created_at published_at prerelease draft author asset_count
+    tag="$(jq -r '.tag_name'       <<<"$release")"
+    name="$(jq -r '.name // .tag_name' <<<"$release")"
+    body="$(jq -r '.body // ""'    <<<"$release")"
+    created_at="$(jq -r '.created_at'  <<<"$release")"
+    published_at="$(jq -r '.published_at' <<<"$release")"
+    prerelease="$(jq -r '.prerelease'  <<<"$release")"
+    draft="$(jq -r '.draft'        <<<"$release")"
+    author="$(jq -r '.author.login'<<<"$release")"
+    asset_count="$(jq '.assets | length' <<<"$release")"
+
+    local rdir="$RELEASES_DIR/$tag"
+    mkdir -p "$rdir"
+
+    jq -n \
+      --arg tag "$tag" --arg name "$name" --arg author "$author" \
+      --arg created "$created_at" --arg published "$published_at" \
+      --argjson pre "$prerelease" --argjson draft "$draft" \
+      --argjson assets "$asset_count" \
+      --arg url "${HELIUM_UPSTREAM_URL}/releases/tag/$tag" \
+      '{tag:$tag,name:$name,author:$author,created_at:$created,
+        published_at:$published,prerelease:$pre,draft:$draft,
+        asset_count:$assets,upstream_url:$url}' \
+      > "$rdir/metadata.json"
+
+    echo "$body" > "$rdir/RELEASE_NOTES.md"
+    jq '.assets[] | {name,size,download_count,browser_download_url}' \
+      <<<"$release" > "$rdir/assets.json"
+
     log "Processed: $tag (author: $author, assets: $asset_count)"
   done
 }
 
+# ── Generate summary files ───────────────────────────────────────────────────
+
 generate_sync_index() {
-  log "Generating sync index..."
-  
-  local index_file="$RELEASES_DIR/INDEX.md"
-  local timestamp=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-  
-  cat > "$index_file" <<EOF
-# Helium Browser Releases - Upstream Sync
+  log "Generating INDEX.md..."
+  local ts
+  ts="$(date -u +'%Y-%m-%d %H:%M:%S UTC')"
 
-**Last synced:** $timestamp
-**Upstream:** [$UPSTREAM_REPO]($UPSTREAM_URL)
+  {
+    echo "# Helium Browser Releases — Upstream Sync"
+    echo ""
+    echo "**Last synced:** $ts"
+    echo "**Upstream:** [${HELIUM_UPSTREAM_REPO}](${HELIUM_UPSTREAM_URL})"
+    echo ""
+    echo "| Tag | Name | Author | Type | Assets | Date |"
+    echo "|-----|------|--------|------|--------|------|"
 
-## Release Summary
-
-EOF
-  
-  # Add release summary table
-  echo "| Tag | Name | Author | Type | Assets | Date |" >> "$index_file"
-  echo "|-----|------|--------|------|--------|------|" >> "$index_file"
-  
-  for release_dir in "$RELEASES_DIR"/*/; do
-    [[ -d "$release_dir" ]] || continue
-    [[ -f "$release_dir/metadata.json" ]] || continue
-    
-    local meta=$(cat "$release_dir/metadata.json")
-    local tag=$(echo "$meta" | jq -r '.tag')
-    local name=$(echo "$meta" | jq -r '.name')
-    local author=$(echo "$meta" | jq -r '.author')
-    local prerelease=$(echo "$meta" | jq -r '.prerelease')
-    local asset_count=$(echo "$meta" | jq -r '.asset_count')
-    local published_at=$(echo "$meta" | jq -r '.published_at' | cut -d'T' -f1)
-    
-    local type="Release"
-    [[ "$prerelease" == "true" ]] && type="Pre-release"
-    
-    echo "| [$tag]($UPSTREAM_URL/releases/tag/$tag) | $name | $author | $type | $asset_count | $published_at |" >> "$index_file"
-  done
-  
-  log "Index generated: $index_file"
+    for rdir in "$RELEASES_DIR"/*/; do
+      [[ -f "$rdir/metadata.json" ]] || continue
+      local meta tag name author prerelease asset_count published_at type
+      meta="$(cat "$rdir/metadata.json")"
+      tag="$(jq -r '.tag'          <<<"$meta")"
+      name="$(jq -r '.name'        <<<"$meta")"
+      author="$(jq -r '.author'    <<<"$meta")"
+      prerelease="$(jq -r '.prerelease' <<<"$meta")"
+      asset_count="$(jq -r '.asset_count' <<<"$meta")"
+      published_at="$(jq -r '.published_at' <<<"$meta" | cut -dT -f1)"
+      type="Release"; [[ "$prerelease" == "true" ]] && type="Pre-release"
+      echo "| [$tag](${HELIUM_UPSTREAM_URL}/releases/tag/$tag) | $name | $author | $type | $asset_count | $published_at |"
+    done
+  } > "$RELEASES_DIR/INDEX.md"
 }
 
 generate_changelog() {
-  log "Generating combined changelog..."
-  
-  local changelog_file="$RELEASES_DIR/CHANGELOG.md"
-  local timestamp=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-  
-  cat > "$changelog_file" <<EOF
-# Helium Browser - Complete Changelog
+  log "Generating CHANGELOG.md..."
+  local ts
+  ts="$(date -u +'%Y-%m-%d %H:%M:%S UTC')"
 
-**Synced from:** [$UPSTREAM_REPO]($UPSTREAM_URL)
-**Last update:** $timestamp
+  {
+    echo "# Helium Browser — Complete Changelog"
+    echo ""
+    echo "**Synced from:** [${HELIUM_UPSTREAM_REPO}](${HELIUM_UPSTREAM_URL})"
+    echo "**Last update:** $ts"
+    echo ""
+    echo "---"
+    echo ""
 
----
+    for rdir in $(ls -d "$RELEASES_DIR"/*/ 2>/dev/null | sort -r); do
+      [[ -f "$rdir/metadata.json" ]] || continue
+      local meta tag name author published_at prerelease upstream_url type=""
+      meta="$(cat "$rdir/metadata.json")"
+      tag="$(jq -r '.tag'             <<<"$meta")"
+      name="$(jq -r '.name'           <<<"$meta")"
+      author="$(jq -r '.author'       <<<"$meta")"
+      published_at="$(jq -r '.published_at' <<<"$meta")"
+      prerelease="$(jq -r '.prerelease' <<<"$meta")"
+      upstream_url="$(jq -r '.upstream_url' <<<"$meta")"
+      [[ "$prerelease" == "true" ]] && type=" (Pre-release)"
 
-EOF
-  
-  # Add releases in reverse chronological order
-  for release_dir in $(ls -d "$RELEASES_DIR"/*/ | sort -r); do
-    [[ -d "$release_dir" ]] || continue
-    [[ -f "$release_dir/metadata.json" ]] || continue
-    
-    local meta=$(cat "$release_dir/metadata.json")
-    local tag=$(echo "$meta" | jq -r '.tag')
-    local name=$(echo "$meta" | jq -r '.name')
-    local author=$(echo "$meta" | jq -r '.author')
-    local published_at=$(echo "$meta" | jq -r '.published_at')
-    local prerelease=$(echo "$meta" | jq -r '.prerelease')
-    local upstream_url=$(echo "$meta" | jq -r '.upstream_url')
-    
-    local type=""
-    [[ "$prerelease" == "true" ]] && type=" (Pre-release)"
-    
-    cat >> "$changelog_file" <<EOF
-## [$tag]($upstream_url)$type
+      echo "## [$tag]($upstream_url)$type"
+      echo ""
+      echo "**Author:** $author  "
+      echo "**Published:** $published_at"
+      echo ""
 
-**Author:** $author  
-**Published:** $published_at
+      if [[ -f "$rdir/RELEASE_NOTES.md" ]]; then
+        cat "$rdir/RELEASE_NOTES.md"
+      fi
 
-EOF
-    
-    # Add release notes
-    if [[ -f "$release_dir/RELEASE_NOTES.md" ]]; then
-      cat "$release_dir/RELEASE_NOTES.md" >> "$changelog_file"
-    fi
-    
-    echo "" >> "$changelog_file"
-    echo "---" >> "$changelog_file"
-    echo "" >> "$changelog_file"
-  done
-  
-  log "Changelog generated: $changelog_file"
+      echo ""
+      echo "---"
+      echo ""
+    done
+  } > "$RELEASES_DIR/CHANGELOG.md"
 }
 
+# ── Create git tags ──────────────────────────────────────────────────────────
+
 create_git_tags() {
-  log "Creating/updating git tags from upstream releases..."
-  
-  local created=0
-  local updated=0
-  local skipped=0
-  
-  for release_dir in "$RELEASES_DIR"/*/; do
-    [[ -d "$release_dir" ]] || continue
-    [[ -f "$release_dir/metadata.json" ]] || continue
-    
-    local meta=$(cat "$release_dir/metadata.json")
-    local tag=$(echo "$meta" | jq -r '.tag')
-    local name=$(echo "$meta" | jq -r '.name')
-    local body=$(cat "$release_dir/RELEASE_NOTES.md" 2>/dev/null || echo "")
-    local author=$(echo "$meta" | jq -r '.author')
-    local published_at=$(echo "$meta" | jq -r '.published_at')
-    
-    # Check if tag exists locally
+  log "Creating git tags..."
+  local created=0 skipped=0
+
+  for rdir in "$RELEASES_DIR"/*/; do
+    [[ -f "$rdir/metadata.json" ]] || continue
+    local meta tag name author published_at body
+    meta="$(cat "$rdir/metadata.json")"
+    tag="$(jq -r '.tag' <<<"$meta")"
+
     if git rev-parse "$tag" >/dev/null 2>&1; then
-      log "Tag already exists: $tag (skipped)"
-      ((skipped++))
-      continue
+      (( skipped++ )); continue
     fi
-    
-    # Create annotated tag with release info
-    local tag_message="$name
+
+    name="$(jq -r '.name' <<<"$meta")"
+    author="$(jq -r '.author' <<<"$meta")"
+    published_at="$(jq -r '.published_at' <<<"$meta")"
+    body="$(cat "$rdir/RELEASE_NOTES.md" 2>/dev/null || true)"
+
+    git tag -a "$tag" -m "$name
 
 Author: $author
 Published: $published_at
-Upstream: $UPSTREAM_URL/releases/tag/$tag
+Upstream: ${HELIUM_UPSTREAM_URL}/releases/tag/$tag
 
-$body"
-    
-    git tag -a "$tag" -m "$tag_message" 2>/dev/null || {
-      warn "Could not create tag: $tag"
-      continue
-    }
-    
+$body" 2>/dev/null || { warn "Could not create tag: $tag"; continue; }
+
     log "Created tag: $tag"
-    ((created++))
+    (( created++ ))
   done
-  
-  log "Tags summary: created=$created, skipped=$skipped"
-  
-  if [[ $created -gt 0 ]]; then
-    log "To push tags to remote, run: git push origin --tags"
-  fi
+
+  log "Tags: created=$created skipped=$skipped"
+  (( created > 0 )) && log "Push tags: git push origin --tags"
 }
+
+# ── Summary ──────────────────────────────────────────────────────────────────
 
 generate_summary() {
-  log "Generating sync summary..."
-  
-  local summary_file="$SYNC_DIR/SYNC_SUMMARY.txt"
-  local timestamp=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-  
-  cat > "$summary_file" <<EOF
-Helium Browser - Upstream Sync Summary
-======================================
+  local ts
+  ts="$(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+  local count
+  count="$(ls -d "$RELEASES_DIR"/*/ 2>/dev/null | wc -l)"
 
-Sync Date: $timestamp
-Upstream: $UPSTREAM_REPO
-Upstream URL: $UPSTREAM_URL
+  cat > "$SYNC_DIR/SYNC_SUMMARY.txt" <<SUMMARY
+Helium Browser — Upstream Sync Summary
+=======================================
+Date:     $ts
+Upstream: ${HELIUM_UPSTREAM_REPO}
+Releases: $count
 
-Synced Data:
-  - Releases directory: $RELEASES_DIR
-  - Sync cache: $SYNC_DIR
-  - Release count: $(ls -d "$RELEASES_DIR"/*/ 2>/dev/null | wc -l)
+Generated:
+  - $RELEASES_DIR/INDEX.md
+  - $RELEASES_DIR/CHANGELOG.md
+  - Git tags (local)
+SUMMARY
 
-Generated Files:
-  - INDEX.md: Release summary table
-  - CHANGELOG.md: Complete changelog with all release notes
-  - Git tags: Local tags created from upstream releases
-
-Next Steps:
-  1. Review synced releases: ls -la $RELEASES_DIR/
-  2. Check changelog: cat $RELEASES_DIR/CHANGELOG.md
-  3. Verify git tags: git tag -l
-  4. Push tags: git push origin --tags
-  5. Commit sync data: git add $RELEASES_DIR/ && git commit -m "chore: sync upstream releases"
-
-EOF
-  
-  cat "$summary_file"
+  cat "$SYNC_DIR/SYNC_SUMMARY.txt"
 }
 
-# --- Main ---
+# ── Main ─────────────────────────────────────────────────────────────────────
 
-check_deps
-
-log "Starting upstream sync process..."
-log "Upstream repository: $UPSTREAM_REPO"
+log "Starting upstream sync..."
 
 fetch_releases
 merge_releases
@@ -323,5 +248,5 @@ generate_changelog
 create_git_tags
 generate_summary
 
-log "Upstream sync completed successfully!"
+log "Upstream sync completed."
 

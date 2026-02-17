@@ -5,6 +5,10 @@ This document provides a quick overview of where files live and how the reposito
 ## Top-level
 
 - `README.md`: User-facing install instructions and project overview.
+- `LICENSE`: MIT license.
+- `.editorconfig`: Editor formatting rules.
+- `.shellcheckrc`: ShellCheck configuration.
+- `CONTRIBUTING.md`: Contributor guidelines.
 - `docs/`: Documentation for contributors and maintainers.
 - `site/`: GitHub Pages content and install scripts.
 - `scripts/`: Automation scripts used by CI to build and publish packages.
@@ -20,11 +24,12 @@ This document provides a quick overview of where files live and how the reposito
 
 Scripts are organized by purpose:
 
+- `lib/`: Shared shell library (`common.sh`) — sourced by every script.
 - `build/`: Build scripts (`build.sh`, `prerelease.sh`, `common.sh`).
 - `repo/`: Repo generation scripts (`apt.sh`, `rpm.sh`).
 - `publish/`: Publishing scripts (`pipeline.sh`, `publish.sh`).
 - `upstream/`: Upstream sync scripts (`check.sh`, `sync.sh`, `full_sync.sh`).
-- `utils/`: Utility scripts (`debug.sh`, `validate.sh`).
+- `utils/`: Utility scripts (`debug.sh`, `validate.sh`, `check-package-arch.sh`).
 - `setup/`: Setup scripts (`dev.sh`, `install_apt.sh`).
 
 For details on script usage, see `scripts/README.md`.

@@ -1,101 +1,64 @@
 #!/usr/bin/env bash
+# ==============================================================================
+# dev.sh — Bootstrap a development environment for this repository
+# ==============================================================================
 set -euo pipefail
 
-# --- Configuration ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# --- Helper Functions ---
-log() { echo -e "\033[1;34m[SETUP]\033[0m $*"; }
-err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
-warn() { echo -e "\033[1;33m[WARN]\033[0m $*"; }
+# shellcheck source=../lib/common.sh
+source "$SCRIPT_DIR/../lib/common.sh"
 
-# --- Main ---
+LOG_PREFIX="SETUP"
 
-log "Setting up Helium Browser packaging repository..."
-log ""
+# ── OS detection ─────────────────────────────────────────────────────────────
 
-# Check OS
-if [[ ! -f /etc/os-release ]]; then
-  err "This script requires a Linux system"
-fi
+[[ -f /etc/os-release ]] || err "This script requires a Linux system"
 
+# shellcheck disable=SC1091
 source /etc/os-release
-
 log "Detected OS: $PRETTY_NAME"
-log ""
 
-# Install dependencies based on OS
+# ── Install dependencies ────────────────────────────────────────────────────
+
+section "Installing dependencies"
+
 if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
-  log "Installing Debian/Ubuntu dependencies..."
   sudo apt-get update
   sudo apt-get install -y \
-    curl \
-    jq \
-    git \
-    dpkg-dev \
-    ruby-dev \
-    build-essential \
-    createrepo-c
-  
-  # Install FPM
-  if ! command -v fpm >/dev/null 2>&1; then
-    log "Installing FPM..."
-    sudo gem install fpm
-  fi
-  
+    curl jq git dpkg-dev ruby-dev build-essential createrepo-c
+  command -v fpm >/dev/null 2>&1 || { log "Installing FPM..."; sudo gem install fpm; }
+
 elif [[ "$ID" == "fedora" || "$ID" == "rhel" || "$ID" == "centos" ]]; then
-  log "Installing Fedora/RHEL/CentOS dependencies..."
   sudo dnf install -y \
-    curl \
-    jq \
-    git \
-    rpm-build \
-    ruby-devel \
-    gcc \
-    make \
-    createrepo_c
-  
-  # Install FPM
-  if ! command -v fpm >/dev/null 2>&1; then
-    log "Installing FPM..."
-    sudo gem install fpm
-  fi
-  
+    curl jq git rpm-build ruby-devel gcc make createrepo_c
+  command -v fpm >/dev/null 2>&1 || { log "Installing FPM..."; sudo gem install fpm; }
+
 else
   warn "Unsupported OS: $ID"
-  warn "Please install the following manually:"
-  warn "  - curl, jq, git"
-  warn "  - dpkg-dev (Debian/Ubuntu) or rpm-build (Fedora/RHEL)"
-  warn "  - createrepo_c"
-  warn "  - fpm (gem install fpm)"
+  warn "Install manually: curl, jq, git, dpkg-dev|rpm-build, createrepo_c, fpm"
 fi
 
-log ""
-log "Creating necessary directories..."
-mkdir -p "$PROJECT_ROOT/dist"
-mkdir -p "$PROJECT_ROOT/site/public/apt/pool/main"
-mkdir -p "$PROJECT_ROOT/site/public/rpm/x86_64"
-mkdir -p "$PROJECT_ROOT/site/public/rpm/aarch64"
-mkdir -p "$PROJECT_ROOT/releases"
-mkdir -p "$PROJECT_ROOT/.backups"
+# ── Project directories ─────────────────────────────────────────────────────
 
-log ""
-log "Making scripts executable..."
-chmod +x "$PROJECT_ROOT"/scripts/*/*.sh
+section "Creating directories"
 
-log ""
-log "Setup completed successfully!"
-log ""
+mkdir -p \
+  "$HELIUM_PROJECT_ROOT/dist" \
+  "$HELIUM_PROJECT_ROOT/site/public/apt/pool/main" \
+  "$HELIUM_PROJECT_ROOT/site/public/rpm/x86_64" \
+  "$HELIUM_PROJECT_ROOT/site/public/rpm/aarch64" \
+  "$HELIUM_PROJECT_ROOT/releases" \
+  "$HELIUM_PROJECT_ROOT/.backups"
+
+# ── Permissions ──────────────────────────────────────────────────────────────
+
+section "Making scripts executable"
+find "$HELIUM_PROJECT_ROOT/scripts" -name '*.sh' -exec chmod +x {} +
+
+section "Setup complete"
 log "Next steps:"
-log "  1. Review RELEASE_PROCESS.md for detailed documentation"
-log "  2. Run: bash scripts/upstream/full_sync.sh"
-log "  3. Or run individual steps:"
-log "     - bash scripts/upstream/sync.sh"
-log "     - bash scripts/build/build.sh"
-log "     - bash scripts/publish/publish.sh"
-log ""
-log "For more information, see:"
-log "  - RELEASE_PROCESS.md - Complete release process documentation"
-log "  - README.md - Installation and usage instructions"
+log "  1. bash scripts/upstream/full_sync.sh   — full pipeline"
+log "  2. bash scripts/build/build.sh          — build only"
+log "  3. bash scripts/publish/publish.sh      — publish only"
 

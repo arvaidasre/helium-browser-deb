@@ -1,77 +1,65 @@
 #!/usr/bin/env bash
+# ==============================================================================
+# rpm.sh — Generate an RPM repository from packages in dist/
+# ==============================================================================
+# Usage: ./rpm.sh [REPO_DIR]
+# ==============================================================================
 set -euo pipefail
 
-# --- Configuration ---
-REPO_NAME="helium-browser"
-REPO_URL="https://arvaidasre.github.io/helium-browser-deb"
-REPO_DIR="${1:-site/public/rpm}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# --- Helper Functions ---
-log() { echo -e "\033[1;34m[RPM-REPO]\033[0m $*"; }
-err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
+# shellcheck source=../lib/common.sh
+source "$SCRIPT_DIR/../lib/common.sh"
 
-check_deps() {
-  if ! command -v createrepo >/dev/null 2>&1 && ! command -v createrepo_c >/dev/null 2>&1; then
-    err "Missing dependency: createrepo or createrepo_c (install with: sudo dnf install createrepo_c or sudo yum install createrepo)"
-  fi
-}
+LOG_PREFIX="RPM-REPO"
 
-# --- Main Logic ---
+readonly REPO_DIR="${1:-site/public/rpm}"
 
-check_deps
+# ── Dependencies ──────────────────────────────────────────────────────────────
+
+if ! command -v createrepo_c >/dev/null 2>&1 && ! command -v createrepo >/dev/null 2>&1; then
+  err "Missing: createrepo or createrepo_c (dnf install createrepo_c)"
+fi
+
+# ── Directory structure ───────────────────────────────────────────────────────
 
 log "Generating RPM repository in $REPO_DIR..."
 
-# Create directory structure
-mkdir -p "$REPO_DIR/x86_64"
-mkdir -p "$REPO_DIR/aarch64"
+mkdir -p "$REPO_DIR/x86_64" "$REPO_DIR/aarch64"
 
-# Copy .rpm files from dist/ to appropriate architecture directories
-if [[ -d "dist" ]]; then
-  for rpm in dist/*.rpm; do
-    if [[ -f "$rpm" ]]; then
-      # Detect architecture from filename
-      if [[ "$rpm" == *"x86_64"* ]]; then
-        log "Copying $(basename "$rpm") to x86_64..."
-        cp "$rpm" "$REPO_DIR/x86_64/"
-      elif [[ "$rpm" == *"aarch64"* ]] || [[ "$rpm" == *"arm64"* ]]; then
-        log "Copying $(basename "$rpm") to aarch64..."
-        cp "$rpm" "$REPO_DIR/aarch64/"
-      else
-        log "Warning: Could not determine architecture for $(basename "$rpm"), copying to x86_64"
-        cp "$rpm" "$REPO_DIR/x86_64/"
-      fi
-    fi
-  done
-else
-  log "Warning: dist/ directory not found. Repository will be empty."
-fi
+# Copy .rpm files from dist/
+[[ -d "dist" ]] || { warn "dist/ directory not found — repo will be empty."; }
 
-# Generate repository metadata
-cd "$REPO_DIR"
-
-# Generate repository metadata
-for arch in x86_64 aarch64; do
-  if [[ -n "$(ls -A "$arch"/*.rpm 2>/dev/null)" ]]; then
-    log "Generating repository metadata for $arch..."
-    if command -v createrepo_c >/dev/null 2>&1; then
-      createrepo_c --update "$arch" || createrepo_c "$arch"
-    elif command -v createrepo >/dev/null 2>&1; then
-      createrepo --update "$arch" || createrepo "$arch"
-    else
-      err "Neither createrepo_c nor createrepo found."
-    fi
+for rpm_file in dist/*.rpm; do
+  [[ -f "$rpm_file" ]] || continue
+  if [[ "$rpm_file" == *x86_64* ]]; then
+    log "Copying $(basename "$rpm_file") → x86_64"
+    cp "$rpm_file" "$REPO_DIR/x86_64/"
+  elif [[ "$rpm_file" == *aarch64* || "$rpm_file" == *arm64* ]]; then
+    log "Copying $(basename "$rpm_file") → aarch64"
+    cp "$rpm_file" "$REPO_DIR/aarch64/"
   else
-    err "No RPM packages found for $arch in $REPO_DIR/$arch. Aborting to avoid empty repo."
+    warn "Unknown arch for $(basename "$rpm_file"), defaulting to x86_64"
+    cp "$rpm_file" "$REPO_DIR/x86_64/"
   fi
 done
 
-log "RPM repository generated successfully!"
-log "Repository location: $REPO_DIR"
-log ""
-log "To use this repository, create /etc/yum.repos.d/helium.repo:"
-log "  [helium]"
-log "  name=Helium Browser Repository"
-log "  baseurl=$REPO_URL/rpm/\$basearch"
-log "  enabled=1"
-log "  gpgcheck=0"
+# ── Generate metadata ────────────────────────────────────────────────────────
+
+cd "$REPO_DIR"
+
+for arch in x86_64 aarch64; do
+  if compgen -G "$arch/*.rpm" >/dev/null; then
+    log "Generating metadata for $arch..."
+    if command -v createrepo_c >/dev/null 2>&1; then
+      createrepo_c --update "$arch" 2>/dev/null || createrepo_c "$arch"
+    else
+      createrepo --update "$arch" 2>/dev/null || createrepo "$arch"
+    fi
+  else
+    err "No RPM packages for $arch in $REPO_DIR/$arch"
+  fi
+done
+
+log "RPM repository generated: $REPO_DIR"
+log "Config: baseurl=${HELIUM_REPO_URL}/rpm/\$basearch"

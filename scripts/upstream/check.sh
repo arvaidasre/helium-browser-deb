@@ -1,83 +1,64 @@
 #!/usr/bin/env bash
+# ==============================================================================
+# check.sh — Display information about the latest upstream release
+# ==============================================================================
 set -euo pipefail
 
-# --- Configuration ---
-UPSTREAM_REPO="imputnet/helium-linux"
-GITHUB_API="https://api.github.com/repos/$UPSTREAM_REPO"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# --- Helper Functions ---
-log() { echo -e "\033[1;34m[CHECK]\033[0m $*"; }
-err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
+# shellcheck source=../lib/common.sh
+source "$SCRIPT_DIR/../lib/common.sh"
 
-check_deps() {
-  local deps=(curl jq)
-  for cmd in "${deps[@]}"; do
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-      err "Missing dependency: $cmd"
-    fi
-  done
-}
+LOG_PREFIX="CHECK"
 
-# --- Main ---
+# ── Dependencies ──────────────────────────────────────────────────────────────
 
-check_deps
+check_deps curl jq
 
-log "Checking upstream repository: $UPSTREAM_REPO"
-log ""
+# ── Fetch latest release ─────────────────────────────────────────────────────
 
-# Fetch latest release
-log "Fetching latest release..."
-if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-  RESPONSE=$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" "$GITHUB_API/releases/latest")
-else
-  RESPONSE=$(curl -fsSL "$GITHUB_API/releases/latest")
-fi
+log "Checking upstream: ${HELIUM_UPSTREAM_REPO}"
 
-# Parse response
-TAG=$(echo "$RESPONSE" | jq -r '.tag_name // "null"')
-NAME=$(echo "$RESPONSE" | jq -r '.name // "null"')
-AUTHOR=$(echo "$RESPONSE" | jq -r '.author.login // "null"')
-CREATED=$(echo "$RESPONSE" | jq -r '.created_at // "null"')
-PUBLISHED=$(echo "$RESPONSE" | jq -r '.published_at // "null"')
-PRERELEASE=$(echo "$RESPONSE" | jq -r '.prerelease // false')
-DRAFT=$(echo "$RESPONSE" | jq -r '.draft // false')
-ASSET_COUNT=$(echo "$RESPONSE" | jq '.assets | length')
-BODY=$(echo "$RESPONSE" | jq -r '.body // ""')
+RESPONSE="$(github_api_get "https://api.github.com/repos/${HELIUM_UPSTREAM_REPO}/releases/latest")"
 
-if [[ "$TAG" == "null" ]]; then
-  err "Could not fetch latest release"
-fi
+TAG="$(jq -r '.tag_name // "null"' <<<"$RESPONSE")"
+[[ "$TAG" == "null" ]] && err "Could not fetch latest release"
 
-log "Latest Release Information:"
-log "  Tag: $TAG"
-log "  Name: $NAME"
-log "  Author: $AUTHOR"
-log "  Created: $CREATED"
-log "  Published: $PUBLISHED"
-log "  Pre-release: $PRERELEASE"
-log "  Draft: $DRAFT"
-log "  Assets: $ASSET_COUNT"
+NAME="$(jq -r '.name // "null"' <<<"$RESPONSE")"
+AUTHOR="$(jq -r '.author.login // "null"' <<<"$RESPONSE")"
+CREATED="$(jq -r '.created_at // "null"' <<<"$RESPONSE")"
+PUBLISHED="$(jq -r '.published_at // "null"' <<<"$RESPONSE")"
+PRERELEASE="$(jq -r '.prerelease // false' <<<"$RESPONSE")"
+DRAFT="$(jq -r '.draft // false' <<<"$RESPONSE")"
+ASSET_COUNT="$(jq '.assets | length' <<<"$RESPONSE")"
+BODY="$(jq -r '.body // ""' <<<"$RESPONSE")"
 
-log ""
-log "Release Notes:"
+# ── Display ───────────────────────────────────────────────────────────────────
+
+section "Latest Release"
+log "Tag:         $TAG"
+log "Name:        $NAME"
+log "Author:      $AUTHOR"
+log "Created:     $CREATED"
+log "Published:   $PUBLISHED"
+log "Pre-release: $PRERELEASE"
+log "Draft:       $DRAFT"
+log "Assets:      $ASSET_COUNT"
+
+section "Release Notes (first 20 lines)"
 echo "$BODY" | head -20 | sed 's/^/  /'
-if [[ $(echo "$BODY" | wc -l) -gt 20 ]]; then
-  log "  ... (truncated)"
-fi
+(( $(echo "$BODY" | wc -l) > 20 )) && log "  … (truncated)"
+
+section "Assets"
+jq -r '.assets[] | "  \(.name) (\(.size / 1048576 | round)MB)"' <<<"$RESPONSE" | head -10
+(( ASSET_COUNT > 10 )) && log "  … and more"
+
+section "Linux Tarballs"
+jq -r '.assets[]
+  | select(.name | test("linux"; "i"))
+  | select(.name | test("\\.tar\\.(xz|gz|zst|bz2)$"; "i"))
+  | "  \(.name): \(.browser_download_url)"' <<<"$RESPONSE" | head -5
 
 log ""
-log "Assets:"
-echo "$RESPONSE" | jq -r '.assets[] | "  \(.name) (\(.size | . / 1024 / 1024 | round)MB)"' | head -10
-
-if [[ $(echo "$RESPONSE" | jq '.assets | length') -gt 10 ]]; then
-  log "  ... and more"
-fi
-
-log ""
-log "Download URLs:"
-echo "$RESPONSE" | jq -r '.assets[] | select(.name | test("linux"; "i")) | select(.name | test("\\.tar\\.(xz|gz|zst|bz2)$"; "i")) | "  \(.name): \(.browser_download_url)"' | head -5
-
-log ""
-log "Repository URL: https://github.com/$UPSTREAM_REPO"
-log "Release URL: https://github.com/$UPSTREAM_REPO/releases/tag/$TAG"
+log "Release: ${HELIUM_UPSTREAM_URL}/releases/tag/$TAG"
 

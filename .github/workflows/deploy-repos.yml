@@ -1,0 +1,76 @@
+name: Deploy Repositories
+
+# Reusable workflow — downloads packages from releases, builds APT/RPM repos,
+# and deploys to GitHub Pages.
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy-repos:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev createrepo-c jq
+
+      - name: Download packages from releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist && rm -rf dist/*
+
+          # Latest stable release
+          LATEST=$(gh api "repos/${{ github.repository }}/releases/latest" \
+            --jq '.tag_name' 2>/dev/null || echo "")
+
+          if [[ -n "$LATEST" && "$LATEST" != "null" ]]; then
+            echo "Downloading stable release: $LATEST"
+            gh release download "$LATEST" --dir dist \
+              --pattern "*.deb" --pattern "*.rpm" || true
+          fi
+
+          # Latest pre-release (if different)
+          PRERELEASE=$(gh api "repos/${{ github.repository }}/releases" \
+            --jq '[.[] | select(.prerelease)] | sort_by(.created_at) | last | .tag_name // ""' \
+            2>/dev/null || echo "")
+
+          if [[ -n "$PRERELEASE" && "$PRERELEASE" != "null" && "$PRERELEASE" != "$LATEST" ]]; then
+            echo "Downloading pre-release: $PRERELEASE"
+            gh release download "$PRERELEASE" --dir dist \
+              --pattern "*.deb" --pattern "*.rpm" || true
+          fi
+
+      - name: Verify packages
+        run: |
+          ls -la dist/
+          ls dist/*.deb >/dev/null 2>&1 || { echo "No .deb packages" >&2; exit 1; }
+          ls dist/*.rpm >/dev/null 2>&1 || { echo "No .rpm packages" >&2; exit 1; }
+
+      - name: Build and publish repositories
+        run: |
+          chmod +x scripts/*/*.sh scripts/lib/*.sh
+          ./scripts/publish/publish.sh
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/public
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

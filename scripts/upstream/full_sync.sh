@@ -1,68 +1,54 @@
 #!/usr/bin/env bash
+# ==============================================================================
+# full_sync.sh — End-to-end: sync → build → publish → validate
+# ==============================================================================
 set -euo pipefail
 
-# --- Configuration ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# --- Helper Functions ---
-log() { echo -e "\033[1;34m[FULL-SYNC]\033[0m $*"; }
-err() { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
+# shellcheck source=../lib/common.sh
+source "$SCRIPT_DIR/../lib/common.sh"
 
-check_deps() {
-  local deps=(bash)
-  for cmd in "${deps[@]}"; do
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-      err "Missing dependency: $cmd"
-    fi
-  done
-  
-  # Check if required scripts exist
-  local scripts=("$SCRIPT_DIR/sync.sh" "$SCRIPT_DIR/../build/build.sh" "$SCRIPT_DIR/../publish/publish.sh" "$SCRIPT_DIR/../utils/validate.sh")
-  for script in "${scripts[@]}"; do
-    if [[ ! -f "$script" ]]; then
-      err "Missing required script: $script"
-    fi
-  done
-}
+LOG_PREFIX="FULL-SYNC"
 
-# --- Main ---
+# ── Validate prerequisites ───────────────────────────────────────────────────
 
-check_deps
+readonly -a REQUIRED_SCRIPTS=(
+  "$SCRIPT_DIR/sync.sh"
+  "$SCRIPT_DIR/../build/build.sh"
+  "$SCRIPT_DIR/../publish/publish.sh"
+  "$SCRIPT_DIR/../utils/validate.sh"
+)
 
-log "Starting full sync and build pipeline..."
-log ""
+for s in "${REQUIRED_SCRIPTS[@]}"; do
+  [[ -f "$s" ]] || err "Missing required script: $s"
+done
 
-# Step 1: Sync upstream releases
-log "Step 1/4: Syncing upstream releases..."
-bash "$SCRIPT_DIR/sync.sh" || err "Upstream sync failed"
-log ""
+# ── Pipeline ─────────────────────────────────────────────────────────────────
 
-# Step 2: Build packages
-log "Step 2/4: Building packages..."
-bash "$SCRIPT_DIR/../build/build.sh" || err "Build failed"
-log ""
+readonly -a STEPS=(
+  "sync.sh|Syncing upstream releases"
+  "../build/build.sh|Building packages"
+  "../publish/publish.sh|Publishing to repositories"
+  "../utils/validate.sh|Validating repositories"
+)
 
-# Step 3: Publish to repositories
-log "Step 3/4: Publishing to repositories..."
-bash "$SCRIPT_DIR/../publish/publish.sh" || err "Publishing failed"
-log ""
+log "Starting full sync pipeline..."
 
-# Step 4: Validate everything
-log "Step 4/4: Validating repositories..."
-bash "$SCRIPT_DIR/../utils/validate.sh" || err "Validation failed"
-log ""
+step=0
+total=${#STEPS[@]}
 
-log "Full sync and build pipeline completed successfully!"
-log ""
-log "Summary:"
-log "  [OK] Upstream releases synced"
-log "  [OK] Packages built"
-log "  [OK] Repositories updated"
-log "  [OK] Validation passed"
-log ""
-log "Next steps:"
-log "  1. Review changes: git status"
-log "  2. Commit: git add . && git commit -m 'chore: sync upstream and update packages'"
-log "  3. Push: git push origin main --tags"
+for entry in "${STEPS[@]}"; do
+  (( step++ ))
+  script="${entry%%|*}"
+  label="${entry#*|}"
+  section "Step $step/$total: $label"
+  bash "$SCRIPT_DIR/$script" || err "$label failed"
+done
+
+section "Pipeline complete"
+log "[OK] Upstream releases synced"
+log "[OK] Packages built"
+log "[OK] Repositories updated"
+log "[OK] Validation passed"
 

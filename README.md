@@ -34,9 +34,10 @@ Visit our **[Web Page](https://arvaidasre.github.io/helium-browser-deb/)** for d
 
 ## Repository Layout
 
-- `scripts/`: build + publish scripts
-- `site/`: public web assets and install scripts
-- `site/public/`: generated APT/RPM repo + Pages artifacts (generated in CI)
+- `scripts/lib/`: shared shell library (sourced by all scripts)
+- `scripts/`: build, publish, upstream-sync, and utility scripts
+- `site/`: public web assets and one-liner install scripts
+- `site/public/`: generated APT/RPM repo + Pages artifacts (CI-only)
 - `docs/`: contributor-facing documentation
 
 ## Repository Organization
@@ -57,7 +58,7 @@ This repository is **fully automated**. No manual intervention required.
 
 | Workflow | Schedule | Purpose |
 |----------|----------|---------|
-| **Watch Upstream** | Every 5 minutes | Detects new upstream releases immediately and triggers build |
+| **Watch Upstream** | Every 15 minutes | Detects new upstream releases and triggers build |
 | **Auto Build** | Every hour | Backup check + builds packages, creates GitHub release, deploys to Pages |
 | **Healthcheck** | Every hour | Monitors repository endpoints, triggers rebuild if broken |
 | **Cleanup** | Weekly (Sunday) | Removes old releases, keeps last 5 stable |
@@ -75,4 +76,4 @@ This repository is **fully automated**. No manual intervention required.
 
 ---
 
-&copy; 2025 Arvaidas Rekis.
+&copy; 2025–2026 Arvaidas Rekis. Licensed under [MIT](LICENSE).
