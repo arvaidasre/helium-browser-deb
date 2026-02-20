@@ -11,6 +11,9 @@
 # Upstream release sync output
 /releases/
 
+# Test repository (local testing only)
+/test_repo/
+
 # Logs
 *.log
 
