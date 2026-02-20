@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Helium Browser - Linux Repository</title>
-    <meta name="description" content="Official Helium Browser repository for Linux. APT and RPM packages with ARM64 support.">
+    <meta name="description" content="Official Helium Browser repository for Linux. Signed APT and RPM packages with ARM64 support.">
     <meta name="theme-color" content="#0f172a">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,37 +14,35 @@
             --bg: #0f172a;
             --bg-soft: #1e293b;
             --surface: #ffffff;
-            --surface-alt: #f1f5f9;
+            --surface-alt: #f8fafc;
             --ink: #0f172a;
             --ink-muted: #64748b;
             --ink-light: #94a3b8;
             --accent: #f97316;
-            --accent-soft: #fed7aa;
+            --accent-soft: #fff7ed;
             --accent-deep: #ea580c;
             --accent-hover: #fb923c;
             --border: #e2e8f0;
+            --success: #10b981;
+            --success-soft: #ecfdf5;
             --card: #ffffff;
             --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             --sans: "Space Grotesk", system-ui, sans-serif;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            --radius-sm: 8px;
-            --radius-md: 12px;
-            --radius-lg: 16px;
-            --radius-xl: 20px;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --radius-xl: 18px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: var(--sans);
             color: var(--ink);
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
             min-height: 100vh;
             line-height: 1.6;
         }
@@ -60,554 +58,441 @@
         .orb {
             position: absolute;
             border-radius: 999px;
-            opacity: 0.35;
+            opacity: 0.4;
+            filter: blur(80px);
         }
 
         .orb.one {
-            width: 500px;
-            height: 500px;
+            width: 600px;
+            height: 600px;
             background: radial-gradient(circle, rgba(249, 115, 22, 0.15), transparent 70%);
-            top: -200px;
-            right: -150px;
-            filter: blur(60px);
+            top: -300px;
+            right: -200px;
         }
 
         .orb.two {
-            width: 450px;
-            height: 450px;
+            width: 500px;
+            height: 500px;
             background: radial-gradient(circle, rgba(14, 165, 233, 0.12), transparent 70%);
             bottom: -200px;
-            left: -150px;
-            filter: blur(60px);
+            left: -200px;
         }
 
         .shell {
             position: relative;
             z-index: 1;
-            max-width: 1200px;
+            max-width: 1100px;
             margin: 0 auto;
-            padding: clamp(40px, 6vw, 80px) clamp(24px, 4vw, 48px);
+            padding: clamp(32px, 5vw, 64px) clamp(20px, 4vw, 40px);
         }
 
-        .hero {
-            background: var(--card);
-            border-radius: var(--radius-xl);
-            padding: clamp(40px, 6vw, 64px);
-            box-shadow: var(--shadow-lg);
-            border: 1px solid var(--border);
-            display: grid;
-            gap: 28px;
-            overflow: hidden;
-            position: relative;
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             margin-bottom: 48px;
-        }
-
-        .hero::before {
-            content: "-";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--accent), #0ea5e9, var(--accent));
-        }
-
-        .hero > * {
-            position: relative;
-            z-index: 1;
+            flex-wrap: wrap;
+            gap: 16px;
         }
 
         .brand {
             display: flex;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 8px;
+            gap: 12px;
         }
 
         .brand img {
-            width: 64px;
-            height: 64px;
+            width: 48px;
+            height: 48px;
             border-radius: var(--radius-md);
             box-shadow: var(--shadow-md);
-            border: 2px solid var(--border);
         }
 
-        .brand span {
-            font-weight: 600;
-            letter-spacing: -0.01em;
-            font-size: 1.15rem;
-            color: var(--ink);
-        }
-
-        h1 {
-            font-size: clamp(2.5rem, 5vw, 3.75rem);
-            line-height: 1.1;
-            letter-spacing: -0.04em;
+        .brand-text {
             font-weight: 700;
-            color: var(--ink);
-            margin: 0;
-        }
-
-        .hero p {
-            color: var(--ink-muted);
-            max-width: 680px;
-            font-size: 1.1rem;
-            line-height: 1.7;
-            margin: 0;
-        }
-
-        .cta-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 14px;
-            margin-top: 8px;
-        }
-
-        .cta {
-            background: var(--ink);
-            color: var(--surface);
-            padding: 14px 28px;
-            border-radius: var(--radius-md);
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            border: 2px solid transparent;
-        }
-
-        .cta.secondary {
-            background: transparent;
-            color: var(--ink);
-            border: 2px solid var(--border);
-        }
-
-        .cta:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .cta:not(.secondary):hover {
-            background: var(--accent);
-        }
-
-        .cta.secondary:hover {
-            border-color: var(--ink);
-            background: var(--surface-alt);
-        }
-
-        .meta-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-top: 4px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-        }
-
-        .chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--surface-alt);
-            padding: 10px 16px;
-            border-radius: var(--radius-md);
-            font-size: 0.9rem;
-            color: var(--ink);
-            border: 1px solid var(--border);
-        }
-
-        .chip strong {
-            font-weight: 600;
-            color: var(--accent-deep);
-        }
-
-        .sections {
-            display: grid;
-            gap: 32px;
-        }
-
-        .section {
-            background: var(--card);
-            padding: clamp(32px, 5vw, 48px);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            transition: all 0.3s ease;
-        }
-
-        .section:hover {
-            box-shadow: var(--shadow-md);
-        }
-
-        .section h2 {
-            font-size: clamp(1.75rem, 3vw, 2.25rem);
-            margin: 0 0 12px 0;
-            letter-spacing: -0.02em;
-            font-weight: 700;
-            color: var(--ink);
-        }
-
-        .section > p {
-            color: var(--ink-muted);
-            font-size: 1.05rem;
-            margin: 0 0 24px 0;
-            line-height: 1.7;
-        }
-
-        .grid {
-            margin-top: 8px;
-            display: grid;
-            gap: 20px;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        }
-
-        .card {
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            background: var(--surface);
-            display: grid;
-            gap: 16px;
-            transition: all 0.2s ease;
-        }
-
-        .card:hover {
-            border-color: var(--accent);
-            box-shadow: var(--shadow-md);
-            transform: translateY(-2px);
-        }
-
-        .card h3 {
             font-size: 1.25rem;
-            margin: 0;
-            font-weight: 600;
-            color: var(--ink);
+            letter-spacing: -0.02em;
         }
 
-        .card > p {
-            color: var(--ink-muted);
-            font-size: 0.95rem;
-            margin: 0;
-            line-height: 1.6;
-        }
-
-        .support {
+        .badge {
             display: inline-flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .support span {
-            background: var(--accent-soft);
-            color: var(--accent-deep);
-            padding: 4px 10px;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--success-soft);
+            color: var(--success);
             border-radius: 999px;
             font-size: 0.8rem;
             font-weight: 600;
         }
 
-        .code-block {
+        .badge::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            background: var(--success);
+            border-radius: 50%;
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            margin-bottom: 56px;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.25rem, 5vw, 3.25rem);
+            line-height: 1.15;
+            letter-spacing: -0.03em;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .hero p {
+            color: var(--ink-muted);
+            font-size: 1.15rem;
+            max-width: 600px;
+            margin: 0 auto 28px;
+        }
+
+        .features {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .feature::before {
+            content: "✓";
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .version-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: var(--ink);
+            color: white;
+            border-radius: 999px;
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        /* Install Section */
+        .install-section {
+            background: var(--card);
+            border-radius: var(--radius-xl);
+            padding: clamp(28px, 4vw, 40px);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border);
+            margin-bottom: 32px;
+        }
+
+        .install-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            color: var(--ink-muted);
+            font-family: var(--sans);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: var(--radius-md);
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            background: var(--surface-alt);
+            color: var(--ink);
+        }
+
+        .tab.active {
+            background: var(--accent-soft);
+            color: var(--accent-deep);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .quick-command {
+            background: var(--surface-alt);
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
             overflow: hidden;
-            background: var(--surface-alt);
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
-        .code-header {
+        .command-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 12px 16px;
             background: var(--surface);
             border-bottom: 1px solid var(--border);
-            font-size: 0.75rem;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: var(--ink-muted);
-            font-weight: 600;
         }
 
-        .code-body {
-            padding: 16px;
-            font-family: var(--mono);
-            font-size: 0.875rem;
-            white-space: pre-wrap;
-            word-break: break-word;
-            color: var(--ink);
-            line-height: 1.7;
+        .command-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--ink-muted);
         }
 
         .copy-btn {
-            background: var(--ink);
-            color: #ffffff;
-            border: none;
-            border-radius: var(--radius-sm);
             padding: 6px 12px;
-            font-size: 0.75rem;
+            border: none;
+            background: var(--ink);
+            color: white;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
         }
 
         .copy-btn:hover {
             background: var(--accent);
-            transform: translateY(-1px);
         }
 
-        .download-package-group {
-            margin-top: 32px;
-        }
-
-        .download-package-group:first-child {
-            margin-top: 0;
-        }
-
-        .package-group-title {
-            font-size: 1.35rem;
-            font-weight: 600;
-            margin: 0 0 20px 0;
+        .command-body {
+            padding: 16px;
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            overflow-x: auto;
+            white-space: pre;
             color: var(--ink);
+        }
+
+        .gpg-note {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 12px;
-            letter-spacing: -0.01em;
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--accent-soft);
+            border-radius: var(--radius-md);
+            border: 1px solid #fed7aa;
         }
 
-        .package-group-title::before {
-            content: "-";
-            width: 5px;
-            height: 24px;
-            background: linear-gradient(180deg, var(--accent), var(--accent-hover));
-            border-radius: 3px;
+        .gpg-note-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
         }
 
-        .download-grid {
+        .gpg-note-text {
+            font-size: 0.9rem;
+            color: var(--ink);
+        }
+
+        .gpg-note-text strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        /* Details Section */
+        .details-section {
             display: grid;
-            gap: 12px;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
         }
 
-        .download-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
+        .detail-card {
+            background: var(--card);
             border-radius: var(--radius-lg);
             padding: 24px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .detail-card h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
             display: flex;
-            flex-direction: column;
-            gap: 16px;
-            transition: all 0.2s ease;
-            position: relative;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .arch-tags {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .arch-tag {
+            padding: 4px 10px;
+            background: var(--surface-alt);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .manual-steps {
+            font-size: 0.9rem;
+            color: var(--ink-muted);
+        }
+
+        .manual-steps ol {
+            margin: 12px 0 0 20px;
+            padding: 0;
+        }
+
+        .manual-steps li {
+            margin-bottom: 8px;
+        }
+
+        /* Accordion */
+        .accordion {
+            background: var(--card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
             overflow: hidden;
+            margin-bottom: 32px;
         }
 
-        .download-card::before {
-            content: "-";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--accent), #0ea5e9);
-            opacity: 0;
-            transition: opacity 0.2s ease;
+        .accordion-item {
+            border-bottom: 1px solid var(--border);
         }
 
-        .download-card:hover {
-            border-color: var(--accent);
-            box-shadow: var(--shadow-md);
-            transform: translateY(-3px);
+        .accordion-item:last-child {
+            border-bottom: none;
         }
 
-        .download-card:hover::before {
-            opacity: 1;
-        }
-
-        .download-card-header {
+        .accordion-header {
+            width: 100%;
+            padding: 18px 24px;
+            background: none;
+            border: none;
+            text-align: left;
+            font-family: var(--sans);
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--ink);
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
+            transition: background 0.2s;
         }
 
-        .download-card-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--ink);
-            margin: 0;
-        }
-
-        .download-card-arch {
+        .accordion-header:hover {
             background: var(--surface-alt);
-            color: var(--ink);
-            padding: 6px 12px;
-            border-radius: var(--radius-sm);
-            font-size: 0.75rem;
-            font-weight: 600;
-            font-family: var(--mono);
-            letter-spacing: 0.02em;
-            border: 1px solid var(--border);
         }
 
-        .download-card-description {
-            color: var(--ink-muted);
-            font-size: 0.95rem;
-            margin: 0;
-            line-height: 1.6;
-        }
-
-        .download-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px 20px;
-            border-radius: var(--radius-md);
-            background: var(--ink);
-            color: #ffffff;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.2s ease;
-            margin-top: auto;
-            border: 2px solid transparent;
-        }
-
-        .download-link::after {
-            content: "-";
-            font-size: 1.1rem;
-            transition: transform 0.2s ease;
-        }
-
-        .download-link.disabled {
-            background: var(--surface-alt);
+        .accordion-header::after {
+            content: "+";
+            font-size: 1.25rem;
             color: var(--ink-light);
-            pointer-events: none;
-            cursor: not-allowed;
-            border-color: var(--border);
+            transition: transform 0.2s;
         }
 
-        .download-link.disabled::after {
-            content: "-";
+        .accordion-item.active .accordion-header::after {
+            transform: rotate(45deg);
         }
 
-        .download-link:not(.disabled):hover {
-            background: var(--accent);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-            border-color: var(--accent);
-        }
-
-        .download-link:not(.disabled):hover::after {
-            transform: translateY(3px);
-        }
-
-        details {
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
+        .accordion-content {
+            max-height: 0;
             overflow: hidden;
-            margin-top: 16px;
-            background: var(--surface-alt);
-            transition: all 0.2s ease;
+            transition: max-height 0.3s ease;
         }
 
-        details:hover {
-            border-color: var(--accent);
+        .accordion-item.active .accordion-content {
+            max-height: 500px;
         }
 
-        details[open] {
-            background: var(--surface);
-        }
-
-        summary {
-            cursor: pointer;
-            padding: 18px 24px;
-            font-weight: 600;
-            list-style: none;
-            color: var(--ink);
-            transition: all 0.2s ease;
-            user-select: none;
-        }
-
-        summary:hover {
-            background: rgba(249, 115, 22, 0.05);
-        }
-
-        summary::-webkit-details-marker { display: none; }
-
-        .details-body {
+        .accordion-body {
             padding: 0 24px 24px;
         }
 
+        /* Footer */
         footer {
-            margin-top: 64px;
-            padding-top: 32px;
-            border-top: 1px solid var(--border);
             text-align: center;
+            padding: 32px 0;
             color: var(--ink-muted);
             font-size: 0.9rem;
-        }
-
-        footer > div {
-            margin-bottom: 16px;
         }
 
         footer a {
             color: var(--ink);
             text-decoration: none;
-            margin: 0 12px;
             font-weight: 500;
-            transition: color 0.2s ease;
+            margin: 0 8px;
         }
 
         footer a:hover {
             color: var(--accent);
-            text-decoration: underline;
         }
 
-        footer p {
-            margin: 0;
-            color: var(--ink-light);
-            font-size: 0.85rem;
+        .footer-links {
+            margin-bottom: 16px;
         }
 
+        /* Toast */
         .toast {
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: #0f172a;
-            color: #ffffff;
-            padding: 10px 16px;
+            background: var(--ink);
+            color: white;
+            padding: 12px 20px;
             border-radius: 999px;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.2s ease, transform 0.2s ease;
+            transition: all 0.3s;
+            z-index: 100;
         }
 
         .toast.show {
             opacity: 1;
-            transform: translateX(-50%) translateY(-6px);
+            transform: translateX(-50%) translateY(-10px);
         }
 
-        @media (max-width: 768px) {
-            .shell { padding: 32px 20px; }
-            .hero { padding: 32px 24px; margin-bottom: 32px; }
-            .section { padding: 28px 24px; }
-            .cta-row { flex-direction: column; }
-            .cta { width: 100%; justify-content: center; }
-            .grid { grid-template-columns: 1fr; }
-            .download-grid { grid-template-columns: 1fr; }
-            .brand { flex-direction: column; align-items: flex-start; gap: 12px; }
-            .meta-row { flex-direction: column; }
-            .chip { width: fit-content; }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            * { scroll-behavior: auto; animation: none !important; transition: none !important; }
+        @media (max-width: 640px) {
+            .install-tabs {
+                flex-direction: column;
+            }
+            .tab {
+                width: 100%;
+                text-align: center;
+            }
+            .features {
+                flex-direction: column;
+                align-items: center;
+            }
         }
     </style>
 </head>
@@ -617,303 +502,245 @@
         <div class="orb two"></div>
     </div>
 
-    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="toast" id="toast">Copied!</div>
 
     <main class="shell">
-        <section class="hero">
+        <!-- Header -->
+        <header class="header">
             <div class="brand">
                 <img src="https://avatars.githubusercontent.com/u/234597297?v=4" alt="Helium logo">
-                <span>Helium Browser for Linux</span>
+                <span class="brand-text">Helium Browser</span>
             </div>
-            <h1>Reliable APT and RPM repository with ARM64 support.</h1>
-            <p>Packages are built automatically from upstream releases. The repo publishes x86_64 and ARM64 builds with a single install command.</p>
-            <div class="cta-row">
-                <a class="cta" href="#install">Quick install</a>
-                <a class="cta secondary" href="https://github.com/arvaidasre/helium-browser-deb/releases" target="_blank" rel="noopener">Release assets</a>
+            <span class="badge">Repository Active</span>
+        </header>
+
+        <!-- Hero -->
+        <section class="hero">
+            <h1>Linux Repository</h1>
+            <p>Official APT and RPM packages for Helium Browser. Signed, automated, and multi-arch ready.</p>
+            <div class="features">
+                <span class="feature">GPG Signed</span>
+                <span class="feature">ARM64 Support</span>
+                <span class="feature">Auto Updates</span>
             </div>
-            <div class="meta-row">
-                <div class="chip">Stable <strong id="stableVersion">--</strong></div>
-                <div class="chip" id="archChip">Architecture: detecting...</div>
+            <span class="version-pill" id="version">Loading...</span>
+        </section>
+
+        <!-- Install Section -->
+        <section class="install-section">
+            <div class="install-tabs">
+                <button class="tab active" data-tab="debian">Debian / Ubuntu</button>
+                <button class="tab" data-tab="fedora">Fedora / RHEL</button>
+            </div>
+
+            <!-- Debian Tab -->
+            <div class="tab-content active" id="debian">
+                <div class="quick-command">
+                    <div class="command-header">
+                        <span class="command-label">One-line installer</span>
+                        <button class="copy-btn" onclick="copy('debian-cmd')">Copy</button>
+                    </div>
+                    <div class="command-body" id="debian-cmd">curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install.sh | bash</div>
+                </div>
+
+                <div class="gpg-note">
+                    <span class="gpg-note-icon">🔐</span>
+                    <div class="gpg-note-text">
+                        <strong>Signed Repository</strong>
+                        Packages are GPG signed. The installer automatically imports the key. For manual setup, see instructions below.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fedora Tab -->
+            <div class="tab-content" id="fedora">
+                <div class="quick-command">
+                    <div class="command-header">
+                        <span class="command-label">One-line installer</span>
+                        <button class="copy-btn" onclick="copy('fedora-cmd')">Copy</button>
+                    </div>
+                    <div class="command-body" id="fedora-cmd">curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash</div>
+                </div>
+
+                <div class="gpg-note">
+                    <span class="gpg-note-icon">🔐</span>
+                    <div class="gpg-note-text">
+                        <strong>Signed Repository</strong>
+                        RPM packages and repository metadata are GPG signed. The installer handles key import automatically.
+                    </div>
+                </div>
             </div>
         </section>
 
-        <div class="sections">
-            <section class="section" id="install">
-                <h2>Quick install</h2>
-                <p>Use the one-liner install scripts. Both AMD64 and ARM64 are supported.</p>
-                <div class="grid">
-                    <div class="card">
-                        <h3>Debian / Ubuntu</h3>
-                        <p>Ubuntu, Debian, Linux Mint</p>
-                        <div class="support">
-                            <span>amd64</span>
-                            <span>arm64</span>
-                        </div>
-                        <div class="code-block">
-                            <div class="code-header">
-                                <span>APT install</span>
-                                <button class="copy-btn" data-copy="cmd-apt">Copy</button>
-                            </div>
-                            <div class="code-body" id="cmd-apt">curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install.sh | bash</div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3>Fedora / RHEL</h3>
-                        <p>Fedora, RHEL, CentOS, Rocky</p>
-                        <div class="support">
-                            <span>x86_64</span>
-                            <span>aarch64</span>
-                        </div>
-                        <div class="code-block">
-                            <div class="code-header">
-                                <span>RPM install</span>
-                                <button class="copy-btn" data-copy="cmd-rpm">Copy</button>
-                            </div>
-                            <div class="code-body" id="cmd-rpm">curl -fsSL https://arvaidasre.github.io/helium-browser-deb/install-rpm.sh | bash</div>
-                        </div>
-                    </div>
+        <!-- Details Section -->
+        <section class="details-section">
+            <div class="detail-card">
+                <h3>🐧 Debian / Ubuntu</h3>
+                <div class="arch-tags">
+                    <span class="arch-tag">amd64</span>
+                    <span class="arch-tag">arm64</span>
                 </div>
-            </section>
-
-            <section class="section" id="downloads">
-                <h2>Direct downloads</h2>
-                <p>Latest release packages for both architectures.</p>
-                
-                <div class="download-package-group">
-                    <h3 class="package-group-title">Debian / Ubuntu packages</h3>
-                    <div class="download-grid" id="downloadGridDeb">
-                        <div class="download-card" data-type="deb" data-arch="amd64">
-                            <div class="download-card-header">
-                                <h4 class="download-card-title">AMD64</h4>
-                                <span class="download-card-arch">amd64</span>
-                            </div>
-                            <p class="download-card-description">For 64-bit x86 processors</p>
-                            <a class="download-link disabled" href="#">Loading...</a>
-                        </div>
-                        <div class="download-card" data-type="deb" data-arch="arm64">
-                            <div class="download-card-header">
-                                <h4 class="download-card-title">ARM64</h4>
-                                <span class="download-card-arch">arm64</span>
-                            </div>
-                            <p class="download-card-description">For ARM-based systems</p>
-                            <a class="download-link disabled" href="#">Loading...</a>
-                        </div>
-                    </div>
+                <div class="manual-steps">
+                    Supports: Ubuntu 20.04+ (focal, jammy, noble), Debian 11+ (bullseye, bookworm)
                 </div>
+            </div>
 
-                <div class="download-package-group">
-                    <h3 class="package-group-title">Fedora / RHEL packages</h3>
-                    <div class="download-grid" id="downloadGridRpm">
-                        <div class="download-card" data-type="rpm" data-arch="x86_64">
-                            <div class="download-card-header">
-                                <h4 class="download-card-title">x86_64</h4>
-                                <span class="download-card-arch">x86_64</span>
-                            </div>
-                            <p class="download-card-description">For 64-bit x86 processors</p>
-                            <a class="download-link disabled" href="#">Loading...</a>
-                        </div>
-                        <div class="download-card" data-type="rpm" data-arch="aarch64">
-                            <div class="download-card-header">
-                                <h4 class="download-card-title">AArch64</h4>
-                                <span class="download-card-arch">aarch64</span>
-                            </div>
-                            <p class="download-card-description">For ARM-based systems</p>
-                            <a class="download-link disabled" href="#">Loading...</a>
-                        </div>
-                    </div>
+            <div class="detail-card">
+                <h3>🎩 Fedora / RHEL</h3>
+                <div class="arch-tags">
+                    <span class="arch-tag">x86_64</span>
+                    <span class="arch-tag">aarch64</span>
                 </div>
-            </section>
+                <div class="manual-steps">
+                    Supports: Fedora 39+, RHEL 9+, CentOS Stream, Rocky Linux, AlmaLinux
+                </div>
+            </div>
+        </section>
 
-            <section class="section" id="manual">
-                <h2>Manual setup</h2>
-                <p>Prefer full control? Add the repository manually.</p>
-
-                <details>
-                    <summary>APT repository</summary>
-                    <div class="details-body">
-                        <div class="code-block">
-                            <div class="code-header">
-                                <span>Manual APT</span>
-                                <button class="copy-btn" data-copy="cmd-apt-manual">Copy</button>
+        <!-- Accordion -->
+        <div class="accordion">
+            <div class="accordion-item">
+                <button class="accordion-header" onclick="toggleAccordion(this)">
+                    Manual APT Setup
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-body">
+                        <div class="quick-command">
+                            <div class="command-header">
+                                <span class="command-label">Import GPG key & add repository</span>
+                                <button class="copy-btn" onclick="copy('apt-manual')">Copy</button>
                             </div>
-                            <div class="code-body" id="cmd-apt-manual">echo "deb [arch=amd64,arm64] https://arvaidasre.github.io/helium-browser-deb/apt stable main" | sudo tee /etc/apt/sources.list.d/helium-browser.list
+                            <div class="command-body" id="apt-manual"># Download and import GPG key
+wget -qO- https://arvaidasre.github.io/helium-browser-deb/apt/HELIUM-GPG-KEY | sudo gpg --dearmor -o /usr/share/keyrings/helium.gpg
+
+# Add repository
+echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/helium.gpg] https://arvaidasre.github.io/helium-browser-deb/apt stable main" | sudo tee /etc/apt/sources.list.d/helium.list
+
+# Install
 sudo apt update
 sudo apt install helium-browser</div>
                         </div>
                     </div>
-                </details>
+                </div>
+            </div>
 
-                <details>
-                    <summary>RPM repository</summary>
-                    <div class="details-body">
-                        <div class="code-block">
-                            <div class="code-header">
-                                <span>Manual RPM</span>
-                                <button class="copy-btn" data-copy="cmd-rpm-manual">Copy</button>
+            <div class="accordion-item">
+                <button class="accordion-header" onclick="toggleAccordion(this)">
+                    Manual RPM Setup
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-body">
+                        <div class="quick-command">
+                            <div class="command-header">
+                                <span class="command-label">Import GPG key & add repository</span>
+                                <button class="copy-btn" onclick="copy('rpm-manual')">Copy</button>
                             </div>
-                            <div class="code-body" id="cmd-rpm-manual">sudo tee /etc/yum.repos.d/helium.repo << 'EOF'
+                            <div class="command-body" id="rpm-manual"># Import GPG key
+sudo rpm --import https://arvaidasre.github.io/helium-browser-deb/rpm/RPM-GPG-KEY-helium
+
+# Add repository
+sudo tee /etc/yum.repos.d/helium.repo << 'EOF'
 [helium]
 name=Helium Browser
 baseurl=https://arvaidasre.github.io/helium-browser-deb/rpm/$basearch
 enabled=1
-gpgcheck=0
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://arvaidasre.github.io/helium-browser-deb/rpm/RPM-GPG-KEY-helium
 EOF
+
+# Install
 sudo dnf install helium-browser</div>
                         </div>
                     </div>
-                </details>
-            </section>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <button class="accordion-header" onclick="toggleAccordion(this)">
+                    Direct Downloads
+                </button>
+                <div class="accordion-content">
+                    <div class="accordion-body">
+                        <p style="margin-bottom: 16px; color: var(--ink-muted);">Download packages directly from the latest release:</p>
+                        <div style="display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                            <a href="https://github.com/arvaidasre/helium-browser-deb/releases/latest" style="padding: 14px; background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-md); text-decoration: none; color: var(--ink); text-align: center; font-weight: 500;">📦 Latest Release</a>
+                            <a href="https://github.com/arvaidasre/helium-browser-deb/releases" style="padding: 14px; background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-md); text-decoration: none; color: var(--ink); text-align: center; font-weight: 500;">📋 All Releases</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
+        <!-- Footer -->
         <footer>
-            <div>
-                <a href="https://github.com/arvaidasre/helium-browser-deb" target="_blank" rel="noopener">GitHub</a>
-                <a href="https://github.com/imputnet/helium-linux" target="_blank" rel="noopener">Upstream</a>
-                <a href="https://github.com/arvaidasre/helium-browser-deb/issues" target="_blank" rel="noopener">Issues</a>
+            <div class="footer-links">
+                <a href="https://github.com/arvaidasre/helium-browser-deb">GitHub</a>
+                <a href="https://github.com/imputnet/helium-linux">Upstream</a>
+                <a href="https://github.com/arvaidasre/helium-browser-deb/issues">Issues</a>
             </div>
-            <p>&copy; 2025 Arvaidas Rekis</p>
+            <p>&copy; 2025 Arvaidas Rekis · <a href="https://github.com/arvaidasre/helium-browser-deb/blob/main/LICENSE">MIT License</a></p>
         </footer>
     </main>
 
     <script>
-        const repo = "arvaidasre/helium-browser-deb";
-
-        function detectArch() {
-            const ua = (navigator.userAgent || "").toLowerCase();
-            if (ua.includes("aarch64") || ua.includes("arm64")) return "arm64";
-            if (ua.includes("x86_64") || ua.includes("amd64") || ua.includes("x64")) return "amd64";
-            return "unknown";
-        }
-
-        function showToast(message) {
-            const toast = document.getElementById("toast");
-            if (!toast) return;
-            toast.textContent = message;
-            toast.classList.add("show");
-            clearTimeout(showToast._t);
-            showToast._t = setTimeout(() => toast.classList.remove("show"), 1400);
-        }
-
-        async function copyText(text) {
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(text);
-                return true;
-            }
-            const ta = document.createElement("textarea");
-            ta.value = text;
-            ta.setAttribute("readonly", "");
-            ta.style.position = "fixed";
-            ta.style.top = "-1000px";
-            ta.style.left = "-1000px";
-            document.body.appendChild(ta);
-            ta.select();
-            let ok = false;
-            try {
-                ok = document.execCommand("copy");
-            } catch (e) {
-                ok = false;
-            }
-            document.body.removeChild(ta);
-            return ok;
-        }
-
-        function setupCopyButtons() {
-            document.querySelectorAll(".copy-btn").forEach(btn => {
-                btn.addEventListener("click", async () => {
-                    const id = btn.getAttribute("data-copy");
-                    const target = document.getElementById(id);
-                    if (!target) return;
-                    const text = target.textContent.trim();
-                    try {
-                        await copyText(text);
-                        btn.textContent = "Copied";
-                        showToast("Copied to clipboard");
-                        setTimeout(() => { btn.textContent = "Copy"; }, 1200);
-                    } catch (e) {
-                        showToast("Copy failed - copy manually");
-                    }
-                });
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
             });
-        }
-
-        function mapAssets(assets) {
-            const map = {
-                deb: { amd64: null, arm64: null },
-                rpm: { x86_64: null, aarch64: null }
-            };
-
-            assets.forEach(asset => {
-                const name = asset.name.toLowerCase();
-                if (name.endsWith(".deb")) {
-                    if (name.includes("amd64") || name.includes("x86_64")) map.deb.amd64 = asset;
-                    if (name.includes("arm64") || name.includes("aarch64")) map.deb.arm64 = asset;
-                }
-                if (name.endsWith(".rpm")) {
-                    if (name.includes("x86_64") || name.includes("amd64")) map.rpm.x86_64 = asset;
-                    if (name.includes("aarch64") || name.includes("arm64")) map.rpm.aarch64 = asset;
-                }
-            });
-
-            return map;
-        }
-
-        function renderDownloads(assetMap) {
-            document.querySelectorAll(".download-card").forEach(card => {
-                const type = card.getAttribute("data-type");
-                const arch = card.getAttribute("data-arch");
-                const link = card.querySelector(".download-link");
-                if (!link || !type || !arch) return;
-
-                const asset = assetMap?.[type]?.[arch];
-                if (asset) {
-                    link.classList.remove("disabled");
-                    link.textContent = "Download";
-                    link.href = asset.browser_download_url;
-                } else {
-                    link.classList.add("disabled");
-                    link.textContent = "Not available";
-                }
-            });
-        }
-
-        async function loadReleaseData() {
-            try {
-                const res = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=10`);
-                if (!res.ok) throw new Error("release fetch failed");
-                const releases = await res.json();
-                const stable = releases.find(r => !r.draft && !r.prerelease);
-                const pre = releases.find(r => !r.draft && r.prerelease);
-                const useRelease = stable || pre;
-
-                if (useRelease) {
-                    document.getElementById("stableVersion").textContent = useRelease.tag_name;
-                    const assets = mapAssets(useRelease.assets || []);
-                    renderDownloads(assets);
-                }
-            } catch (e) {
-                document.getElementById("stableVersion").textContent = "v0.x";
-                renderDownloads(null);
-            }
-        }
-
-        function updateArchChip() {
-            const arch = detectArch();
-            const chip = document.getElementById("archChip");
-            if (!chip) return;
-            if (arch === "amd64") {
-                chip.innerHTML = "Architecture: <strong>amd64</strong>";
-            } else if (arch === "arm64") {
-                chip.innerHTML = "Architecture: <strong>arm64</strong>";
-            } else {
-                chip.innerHTML = "Architecture: <strong>choose amd64/arm64</strong>";
-            }
-        }
-
-        window.addEventListener("load", () => {
-            setupCopyButtons();
-            updateArchChip();
-            loadReleaseData();
         });
+
+        // Accordion
+        function toggleAccordion(header) {
+            const item = header.parentElement;
+            const wasActive = item.classList.contains('active');
+            
+            document.querySelectorAll('.accordion-item').forEach(i => i.classList.remove('active'));
+            
+            if (!wasActive) {
+                item.classList.add('active');
+            }
+        }
+
+        // Copy function
+        async function copy(id) {
+            const text = document.getElementById(id).textContent;
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast('Copied to clipboard!');
+            } catch (e) {
+                showToast('Copy failed - copy manually');
+            }
+        }
+
+        // Toast
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        // Load version
+        async function loadVersion() {
+            try {
+                const res = await fetch('https://api.github.com/repos/arvaidasre/helium-browser-deb/releases/latest');
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('version').textContent = data.tag_name;
+                } else {
+                    document.getElementById('version').textContent = 'v0.x';
+                }
+            } catch (e) {
+                document.getElementById('version').textContent = 'v0.x';
+            }
+        }
+
+        loadVersion();
     </script>
 </body>
 </html>
