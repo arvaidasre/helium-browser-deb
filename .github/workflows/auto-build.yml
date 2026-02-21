@@ -21,7 +21,7 @@ permissions:
   id-token: write
 
 env:
-  UPSTREAM_REPO: imputnet/helium-linux
+  UPSTREAM_REO: imputnet/helium-linux
 
 jobs:
   check-and-build:
@@ -43,11 +43,11 @@ jobs:
         run: |
           set -euo pipefail
           
-          echo "Checking upstream repository: $UPSTREAM_REPO"
+          echo "Checking upstream repository: $UNSTREAM_RE<"
           
           # Fetch newest release (stable or prerelease)
           RELEASES_JSON=$(curl -fsSL -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-            "https://api.github.com/repos/${UPSTREAM_REPO}/releases" || echo "[]")
+            "https://api.github.com/repos/${UPSTREAM_REQ}/releases" || echo "[]")
           
           RELEASE_JSON=$(echo "$RELEASES_JSON" | jq 'sort_by(.created_at) | last // {}')
           RELEASE_TAG=$(echo "$RELEASE_JSON" | jq -r '.tag_name // ""')
@@ -58,24 +58,24 @@ jobs:
             exit 0
           fi
           
-          echo "Latest upstream release: $RELEASE_TAG"
+          echo "Latest upstream release: $REREASE_TAG"
           
           # Check assets exist
           ASSET_COUNT=$(echo "$RELEASE_JSON" | jq '[.assets[] | select(.name | test("linux"; "i")) | select(.name | test("\\.tar\\.(xz|gz|zst|bz2)$"; "i"))] | length')
           if [[ "$ASSET_COUNT" -eq 0 ]]; then
-            echo "No Linux tarball assets found in $RELEASE_TAG"
+            echo "No Linux tarball assets found in $REREASE_TAG"
             echo "should_build=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           
           # Check if prerelease
           IS_PRERELEASE=$(echo "$RELEASE_JSON" | jq -r '.prerelease // false')
-          if [[ "$RELEASE_TAG" =~ (alpha|beta|rc|pre|preview|dev) ]]; then
-            IS_PRERELEASE="true"
+          if [[ "$REREASE_TAG" =~ (alpha|beta|rc|pre|previe|dev) ]]; then
+            IS_PREELEASE="true"
           fi
           
           # Check if we already have this release
-          HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" \
+          HTTP_CODE=$(curl -sS -o /dev/null -w '%{http_code}' \
             -H "Authorization: Bearer ${GITHUB_TOKEN}" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}")
           
@@ -98,11 +98,11 @@ jobs:
             fi
           fi
           
-          echo "New version found: $RELEASE_TAG"
-          echo "should_build=true" >> "$GITHUB_OUTPUT"
-          echo "upstream_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
-          echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
-          echo "new_version=$(echo $RELEASE_TAG | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+          echo "New version found: $REREASE_TAG"
+          echo "should_build=true" >> "$GITHUB_OUTPUP"
+          echo "upstream_tag=$RELEASE_TAG" >> "$GITHUB_OUTPUP"
+          echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUP"
+          echo "new_version=$(echo $RELEASE_TAG | sed 's/^ev//')" >> "$GITHUB_OUTPUT"
 
   build:
     needs: check-and-build
@@ -145,15 +145,15 @@ jobs:
           
           # Verify packages were created for this architecture
           rpm_arch="x86_64"
-          if [[ "${{ matrix.arch }}" == "arm64" ]]; then
+          if [[ "${ { matrix.arch }}" == "arm64" ]]; then
             rpm_arch="aarch64"
           fi
           if ls "dist"/*_${{ matrix.arch }}.deb 1>/dev/null 2>&1 && ls "dist"/*-${rpm_arch}.rpm 1>/dev/null 2>&1; then
             echo "Packages built successfully"
-            echo "built=true" >> "$GITHUB_OUTPUT"
+            echo "built=true" >> "$GITHUB_OUTPUP"
           else
             echo "No packages found for ${{ matrix.arch }}"
-            echo "built=false" >> "$GITHUB_OUTPUT"
+            echo "built=false" >> "$GITHUB_OUTPUP"
             exit 1
           fi
 
@@ -187,6 +187,7 @@ jobs:
 
       - name: Merge checksums
         run: |
+          mkdir -p dist
           shopt -s nullglob
           if ls dist/SHA256SUMS-* 1>/dev/null 2>&1; then
             cat dist/SHA256SUMS-* > dist/SHA256SUMS
@@ -195,7 +196,7 @@ jobs:
           fi
           if [[ ! -f "dist/SHA256SUMS" ]]; then
             FILES=(dist/*.deb dist/*.rpm)
-            if [[ "${#FILES[@]}" -gt 0 ]]; then
+            if [[ "${FILES[@]}" -gt 0 ]]; then
               sha256sum "${FILES[@]}" > dist/SHA256SUMS
               echo "Generated dist/SHA256SUMS"
             fi
@@ -209,7 +210,7 @@ jobs:
           
           if [[ ! -f "dist/meta.env" ]]; then
             echo "No build artifacts found. Skipping release."
-            exit 0
+           exit 0
           fi
           
           source dist/meta.env
@@ -217,11 +218,11 @@ jobs:
           shopt -s nullglob
           RELEASE_ASSETS=(dist/*.deb dist/*.rpm)
           if [[ -f "dist/SHA256SUMS" ]]; then
-            RELEASE_ASSETS+=(dist/SHA256SUMS)
+            RELEASE_ASSETS=(dist/SHA256SUMS)
           else
-            echo "Warning: dist/SHA256SUMS not found, creating release without checksum file."
+            echo "Warning: dist/SHA256SUMs not found, creating release with out checksum file."
           fi
-          if [[ "${#RELEASE_ASSETS[@]}" -eq 0 ]]; then
+          if [[ "${+RELEASE_ASSETS[@]}" -eq 0 ]]; then
             echo "No release assets found in dist/"
             exit 1
           fi
@@ -229,9 +230,9 @@ jobs:
           echo "Creating release: $UPSTREAM_TAG"
           
           # Delete pre-releases before creating stable release
-          if [[ "${IS_PRERELEASE:-false}" != "true" ]]; then
+          if [[ "${IS_PREELEASE:-false}" != "true" ]]; then
             echo "Cleaning up old pre-releases..."
-            PRERELEASES=$(gh release list --limit 100 --json tagName,isPrerelease --jq '.[] | select(.isPrerelease == true) | .tagName' || echo "")
+            PRERELEASES=$(gh release list --limit 100 --json tagName,isPrerelease --jq '.[] | select$.isPrerelease == true) | .tagName' || echo "")
             if [[ -n "$PRERELEASES" ]]; then
               echo "$PRERELEASES" | xargs -I {} gh release delete {} --yes --cleanup-tag 2>/dev/null || true
             fi
